@@ -1,0 +1,2169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iVMS-4200 door programming</title>
+<meta name="description" content="LSN-ACCESS Lesson 1 interactive: Add the controller, set the door, enter the people and cards, build the schedule, download the permissions, and test the staff entrance.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Figtree:wght@400;500;600;700&family=Red+Hat+Mono:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/renderers/CSS2DRenderer.js"></script>
+<style>
+  /* ===== CBT "Shield bench" theme v1 (quality reference: templates/theme/reference/tiny-machine-lab.html). Paste as the first block of every page's <style>. ===== */
+  :root{
+    /* CBT brand */
+    --cbt-navy:#283068; --cbt-sky:#38B0E0; --cbt-gold:#E0B840; --cbt-gray:#989890; --cbt-navy-dark:#1B2150;
+    /* dark bench (navy board, gold traces) */
+    --board:#141a45; --board-deep:#0b0f2b; --panel:#10163b; --panel-2:#171f4f; --line:#2a3470; --line-2:#3a4690;
+    --silk:#eef1fa; --silk-dim:#aeb3c9; --copper:#E0B840;
+    /* signal colors: each course plan says what they mean; defaults below */
+    --addr:#E0B840; --data:#38B0E0; --ctrl:#F0786A; --alu:#6FD49B; --oper:#A9B4FF; --out:#9FE7FF; --led:#6FD49B;
+    --ok:#6FD49B; --bad:#F0786A; --warn:#E0B840; --neon:#39ff14;
+    --font-mono:"Red Hat Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --font-body:"Figtree","Helvetica Neue",Arial,sans-serif;
+    --font-display:"Archivo","Arial Black",Arial,sans-serif;
+    --mono:var(--font-mono); --sans:var(--font-body); --display:var(--font-display);
+    --r:6px; --lab:10px;
+    /* legacy names, mapped to the dark theme */
+    --ink:#eef1fa; --ink-2:#cdd2e6; --muted:#aeb3c9; --bg:#0b0f2b; --card:#10163b; --edge:#2a3470; --edge-2:#3a4690; --dim:#aeb3c9; --silk-2:#cdd2e6;
+    --code-bg:#070a22; --code-ink:#9FE7FF;
+    --net-blue:#38B0E0; --net-green:#6FD49B; --net-amber:#E0B840; --net-purple:#A9B4FF; --net-teal:#5fe0c8;
+    --ok-soft:rgba(111,212,155,.10); --bad-soft:rgba(240,120,106,.10); --warn-soft:rgba(224,184,64,.10);
+    --radius:6px; --shadow:none;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  html{background:var(--board-deep)}
+  [hidden]{display:none!important}
+  body{color:var(--silk);font-family:var(--font-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
+    background:radial-gradient(1200px 600px at 30% -10%,#1d2a6e 0%,transparent 60%),var(--board-deep)}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(135deg,rgba(224,184,64,.035) 0 2px,transparent 2px 26px);-webkit-mask:radial-gradient(900px 600px at 100% 100%,#000,transparent 70%);mask:radial-gradient(900px 600px at 100% 100%,#000,transparent 70%)}
+  button,input,select,textarea{font:inherit;color:inherit}
+  a{color:var(--data)}
+  :focus-visible{outline:2px solid var(--addr);outline-offset:2px}
+  /* brand bar: white, CBT logo (shield and wordmark), navy rule with a gold underline like the shield */
+  .topbar{position:relative;z-index:5;background:#fff;border-bottom:4px solid var(--cbt-navy);box-shadow:0 3px 0 var(--cbt-gold)}
+  .topbar-inner{max-width:none;margin:0 auto;padding:8px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand-logo{display:block;flex:none;height:40px}
+  .brand-logo img{height:40px;width:auto;display:block}
+  .crumb{font-size:13px;color:#5d6178;letter-spacing:.02em;border-left:1px solid #DADDEA;padding-left:16px}
+  .crumb b{color:var(--cbt-navy);font-weight:700}
+  .crumb a{color:var(--cbt-navy)}
+  /* page mode (challenges and pages with a scrolling layout) */
+  main,.wrap{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:26px 16px 36px}
+  .hero{margin:0 0 20px}
+  .eyebrow{display:block;margin:0;font:600 10.5px var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--cbt-sky);background:none;padding:0}
+  h1{margin:6px 0 8px;font-family:var(--font-display);font-weight:800;font-stretch:118%;font-size:clamp(24px,3.4vw,36px);line-height:1.15;letter-spacing:-.01em;text-wrap:balance;color:var(--silk)}
+  h1 .num{color:var(--cbt-gold)}
+  h2{margin:0 0 10px;font-family:var(--font-display);font-weight:700;font-stretch:110%;font-size:14px;letter-spacing:.02em;color:var(--silk)}
+  h2 small,h3 small{color:var(--silk-dim);font-weight:400}
+  h3{margin:0 0 8px;font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:.02em;color:var(--silk)}
+  .lede{margin:0;color:var(--silk-dim);font-size:15px;max-width:68ch}
+  .muted{color:var(--silk-dim)}
+  .spec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .spec div{background:var(--panel);padding:9px 11px}
+  .spec b{display:block;font:600 15px var(--font-mono);color:var(--silk)}
+  .spec span{font-size:12px;color:var(--silk-dim)}
+  @media(min-width:960px){.hero.split{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;align-items:end}}
+  .card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0;color:var(--silk);
+    background-image:radial-gradient(rgba(238,241,250,.035) 1px,transparent 1px);background-size:14px 14px}
+  .card[data-ref]::after{content:attr(data-ref);position:absolute;top:9px;right:12px;font:500 9.5px var(--font-mono);letter-spacing:.12em;color:rgba(174,179,201,.55)}
+  .grid{display:grid;gap:14px}
+  .grid>*{min-width:0}
+  @media(min-width:900px){.grid.two{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}}
+  details,details.howto{border:1px solid var(--line);border-radius:5px;background:var(--panel)}
+  details.howto{margin:0 0 16px}
+  summary{cursor:pointer;padding:10px 12px;font:500 12.5px var(--font-mono);color:var(--silk)}
+  details>*:not(summary){margin-left:12px;margin-right:12px}
+  details.howto ol,details.howto ul{margin:4px 12px 12px;padding-left:20px;color:var(--silk-dim)}
+  details.howto li{margin-bottom:5px}
+  details.howto li::marker{color:var(--copper)}
+  .btn{border:1px solid var(--line);background:var(--panel-2);border-radius:5px;padding:9px 12px;font:500 12px var(--font-mono);color:var(--silk);cursor:pointer;transition:border-color .2s,background .2s;display:inline-flex;gap:6px;align-items:center;justify-content:center}
+  .btn:hover:not(:disabled){border-color:var(--copper)}
+  .btn.primary,.btn.go{background:var(--copper);border-color:var(--copper);color:#1a1205;font-weight:600}
+  .btn.primary:hover:not(:disabled),.btn.go:hover:not(:disabled){background:#ecc85c}
+  .btn[aria-pressed="true"],.btn.on{border-color:var(--data);color:var(--data)}
+  .btn:disabled,.btn[disabled]{opacity:.4;cursor:not-allowed}
+  input[type=text],input[type=number],select,textarea{background:var(--board-deep);border:1px solid var(--line);border-radius:5px;padding:8px 10px;font:500 13.5px var(--font-mono);color:var(--silk);min-width:0}
+  input[type=checkbox],input[type=radio],input[type=range]{accent-color:var(--copper)}
+  .mono,code,kbd{font-family:var(--font-mono);font-size:.92em}
+  code{background:rgba(238,241,250,.07);padding:1px 5px;border-radius:3px}
+  .cli{background:var(--code-bg);color:var(--code-ink);font:500 12.5px/1.6 var(--font-mono);border-radius:5px;padding:12px 14px;overflow:auto;white-space:pre;border:1px solid var(--line)}
+  .pill{display:inline-block;font:500 10.5px var(--font-mono);letter-spacing:.06em;padding:3px 8px;border-radius:3px;background:var(--panel-2);color:var(--silk-dim);border:1px solid var(--line)}
+  .feedback{border-radius:5px;padding:11px 13px;margin-top:12px;font-size:14.5px;color:var(--silk)}
+  .feedback.ok{background:rgba(111,212,155,.08);border:1px solid rgba(111,212,155,.45)}
+  .feedback.bad{background:rgba(240,120,106,.08);border:1px solid rgba(240,120,106,.45)}
+  .feedback.info{background:rgba(56,176,224,.08);border:1px solid rgba(56,176,224,.45)}
+  .score{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font:500 12px var(--font-mono);color:var(--silk-dim)}
+  .score .big{font:800 36px/1 var(--font-display);font-stretch:118%;color:var(--silk);font-variant-numeric:tabular-nums}
+  table,table.data{border-collapse:collapse;width:100%;font:500 12px var(--font-mono);font-variant-numeric:tabular-nums}
+  th,table.data th{font-weight:500;color:var(--silk-dim);text-align:left;font-size:10.5px;letter-spacing:.04em;padding:7px 8px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+  td,table.data td{padding:4px 8px;border-bottom:1px solid rgba(42,52,112,.55)}
+  .scroll-x,.memwrap{overflow-x:auto}
+  .memwrap{border:1px solid var(--line);border-radius:5px}
+  svg text{font-family:var(--font-mono)}
+  /* step-by-step explanation (page mode and app mode) */
+  .stepper{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  .caption,.narr{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:13px 15px;color:var(--silk)}
+  .caption{margin-top:12px;min-height:4.4em}
+  .caption .t{font:500 11px var(--font-mono);letter-spacing:.1em;color:var(--cap,var(--copper));margin-bottom:6px;text-transform:uppercase}
+  .narr{display:flex;flex-direction:column;gap:8px}
+  .narr-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font:400 11px var(--font-mono);color:var(--silk-dim)}
+  .ptag{display:inline-flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.1em;color:var(--silk)}
+  .ptag::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--pc,var(--silk-dim));box-shadow:0 0 8px var(--pc,transparent)}
+  .narr p{margin:0;font-size:15.5px;line-height:1.55;min-height:4.6em}
+  .controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .controls .btn{padding:10px 6px}
+  .speed{display:flex;align-items:center;gap:12px;font:400 11.5px var(--font-mono);color:var(--silk-dim)}
+  .speed input{flex:1;min-width:0}
+  .speed output{color:var(--silk);width:3.5em;text-align:right;font-variant-numeric:tabular-nums}
+  .hint{margin:0;font-size:12px;color:var(--silk-dim)}
+  .rail{display:flex;gap:2px;margin:4px 0 12px;padding:4px;list-style:none;background:rgba(11,15,43,.78);border:1px solid var(--line);border-radius:6px}
+  .rail>div,.rail>li{flex:1;text-align:center;font:500 11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;padding:6px 8px;border-radius:4px;color:var(--silk-dim);transition:background .25s,color .25s}
+  .rail>div small{display:block;font:400 9.5px var(--font-body);letter-spacing:.02em;text-transform:none;margin-top:2px;opacity:.85}
+  .rail>.on{background:var(--c,var(--copper));color:#1a1205}
+  .rail>.done{color:var(--c,var(--copper))}
+  /* live state */
+  .regs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .reg{border:1px solid var(--line);border-radius:5px;padding:9px 11px;transition:border-color .3s,background .3s;min-width:0}
+  .reg.kv{display:grid;grid-template-columns:1fr auto;gap:1px 8px;align-items:baseline}
+  .reg.on,.reg.flash{border-color:var(--hc,var(--copper));background:rgba(224,184,64,.08)}
+  .reg .rn{font:600 12px var(--font-mono)}
+  .reg .rv{font:600 17px var(--font-mono);text-align:right;font-variant-numeric:tabular-nums}
+  .reg .rf{font-size:11.5px;color:var(--silk-dim)}
+  .reg .rs{font:400 10.5px var(--font-mono);color:var(--silk-dim);text-align:right;font-variant-numeric:tabular-nums}
+  .reg.wide{grid-column:1/-1}
+  .reg .n{display:flex;justify-content:space-between;align-items:baseline;font:600 12px var(--font-mono);color:var(--silk)}
+  .reg .n b{font:600 17px var(--font-mono);font-variant-numeric:tabular-nums}
+  .bits{grid-column:1/-1;display:grid;grid-template-columns:repeat(var(--nb,8),1fr);gap:4px;margin-top:8px}
+  .bit{display:flex;flex-direction:column;align-items:center;gap:3px;font:400 9.5px var(--font-mono);color:var(--silk-dim)}
+  .bit i{width:100%;height:16px;border-radius:2px;background:#1a2350;border:1px solid var(--line);transition:background .25s,box-shadow .25s}
+  .bit.one i{background:var(--led);border-color:var(--led);box-shadow:0 0 8px rgba(111,212,155,.55)}
+  .ledbits{display:flex;gap:4px;margin:6px 0 2px;flex-wrap:wrap}
+  .ledbits i{width:16px;height:16px;border-radius:2px;background:#1a2350;border:1px solid var(--line);font:600 9px/14px var(--font-mono);font-style:normal;color:#4a5490;text-align:center}
+  .ledbits i.on{background:var(--led);border-color:var(--led);color:#06220f;box-shadow:0 0 8px rgba(111,212,155,.55)}
+  .tape{display:flex;flex-wrap:wrap;gap:4px;min-height:34px;align-content:flex-start}
+  .tape span{font:600 13px var(--font-mono);color:var(--out);background:#0f1c44;border:1px solid #2a4a7a;border-radius:3px;padding:3px 7px;font-variant-numeric:tabular-nums}
+  .tape em{font-style:normal;font-size:12px;color:var(--silk-dim)}
+  .notice{margin:0;padding-left:18px;color:var(--silk-dim);font-size:13.5px;display:flex;flex-direction:column;gap:6px}
+  .notice li::marker{color:var(--copper)}
+  .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font:400 10.5px var(--font-mono);color:var(--silk-dim);letter-spacing:.04em}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:16px;height:3px;border-radius:2px;background:var(--c);box-shadow:0 0 8px var(--c)}
+  /* app mode: the 3D board fills the left, a control rail sits on the right (stacks under the board on phones) */
+  .app{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,410px);height:calc(100vh - 55px);min-height:560px}
+  .stage{position:relative;min-width:0;min-height:320px;overflow:hidden;background:radial-gradient(ellipse at 40% 38%,#1d2a6e 0%,var(--board-deep) 72%);touch-action:none}
+  .stage .gl{position:absolute;inset:0;display:block;z-index:1}
+  .stage .labels{position:absolute!important;top:0;left:0;z-index:2}
+  .stage .flat{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+  .nogl{position:absolute;left:0;right:0;top:0;padding:7px 12px;text-align:center;color:var(--silk-dim);font-size:12px;z-index:4;background:rgba(11,15,43,.9);border-bottom:1px solid var(--line)}
+  .stage:has(.nogl:not([hidden])) .hud-top{top:44px}
+  .stage:has(.nogl:not([hidden])) .flat{top:34px;height:calc(100% - 34px)}
+  .hud{position:absolute;z-index:3;pointer-events:none;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .hud button,.hud a{pointer-events:auto}
+  .hud-top{top:14px;left:16px;right:16px}
+  .hud-bottom{bottom:14px;left:16px;right:16px;justify-content:space-between;align-items:flex-end}
+  .hud .phases,.hud .ticks,.hud .legend,.hud .views{background:rgba(11,15,43,.78);border:1px solid var(--line);border-radius:6px;backdrop-filter:blur(6px)}
+  .phases{list-style:none;margin:0;padding:4px;display:flex;gap:2px}
+  .phases li{font:500 11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border-radius:4px;color:var(--silk-dim);transition:background .25s,color .25s}
+  .phases li.on{background:var(--c,var(--copper));color:#1a1205}
+  .ticks{font:400 11px var(--font-mono);color:var(--silk-dim);padding:9px 10px;font-variant-numeric:tabular-nums}
+  .ticks b{color:var(--silk);font-weight:600}
+  .hud .legend{padding:8px 12px}
+  .views{display:flex;gap:2px;padding:4px}
+  .views button{border:0;background:transparent;font:400 11px var(--font-mono);padding:6px 10px;border-radius:4px;color:var(--silk-dim);cursor:pointer}
+  .views button:hover{color:var(--silk)}
+  .views button.on{background:var(--panel-2);color:var(--silk)}
+  .credit{flex-basis:100%;margin:2px 0 0 2px;font:600 14px var(--font-mono);letter-spacing:.08em;color:var(--neon);text-shadow:0 0 4px var(--neon),0 0 12px rgba(57,255,20,.75),0 0 26px rgba(57,255,20,.45)}
+  .tag,.stage3d .label3d{pointer-events:none;display:flex;flex-direction:column;align-items:center;font-family:var(--font-mono);line-height:1.1;text-align:center;color:var(--silk);text-shadow:0 1px 2px rgba(0,0,0,.8)}
+  .tag .nm{font-size:calc(var(--lab) * .85);letter-spacing:.1em;color:var(--silk-dim)}
+  .tag .vl{font-size:calc(var(--lab) * 1.3);font-weight:600;font-variant-numeric:tabular-nums}
+  .tag .sb{font-size:calc(var(--lab) * .72);color:var(--silk-dim);letter-spacing:.04em}
+  .tag .sb:empty{display:none}
+  .tag.on .nm{color:var(--silk)}
+  .tag.on .vl{color:#fff6d8}
+  .cell .nm{font-size:calc(var(--lab) * .75)}
+  .cell .vl{font-size:calc(var(--lab) * 1.15)}
+  .zone{pointer-events:none;font-family:var(--font-mono);font-size:calc(var(--lab) * .82);letter-spacing:.14em;text-transform:uppercase;color:var(--c,var(--silk-dim));opacity:.85;white-space:nowrap;text-align:center;line-height:1.3}
+  .lcd{pointer-events:none;font-family:var(--font-mono);font-weight:600;color:var(--out);font-size:calc(var(--lab) * 2);text-shadow:0 0 10px rgba(111,212,155,.8);font-variant-numeric:tabular-nums}
+  .pkt{pointer-events:none;font-family:var(--font-mono);font-size:calc(var(--lab) * 1.1);font-weight:700;color:#06120f;background:var(--c);padding:2px 6px;border-radius:3px;box-shadow:0 0 14px var(--c);white-space:nowrap}
+  .panel{min-width:0;overflow-y:auto;background:var(--panel);border-left:1px solid var(--line);padding:20px 18px 28px;display:flex;flex-direction:column;gap:22px;
+    background-image:radial-gradient(rgba(238,241,250,.035) 1px,transparent 1px);background-size:14px 14px}
+  .panel h1{font-size:26px;margin:4px 0 6px}
+  /* a Lab3D stage inside a card (page mode challenges) */
+  .card .stage{width:100%;aspect-ratio:16/10;min-height:0;border-radius:6px;border:1px solid var(--line)}
+  @media(max-width:640px){.card .stage{aspect-ratio:4/3}}
+  .progress{display:flex;gap:3px;margin:10px 0}
+  .progress i{flex:1;height:6px;border-radius:2px;background:var(--line)}
+  .progress i.ok{background:var(--ok)}.progress i.part{background:var(--warn)}.progress i.bad{background:var(--bad)}.progress i.now{background:var(--cbt-sky)}
+  .opts{display:grid;gap:8px;margin-top:10px}
+  .opts button{text-align:left;padding:11px 13px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--silk);font:500 14.5px var(--font-body);cursor:pointer}
+  .opts button:hover:not(:disabled){border-color:var(--cbt-gold)}
+  .opts button.right{border-color:var(--ok);background:rgba(111,212,155,.10)}
+  .opts button.wrong{border-color:var(--bad);background:rgba(240,120,106,.10)}
+  /* the older make3D stage (page mode) */
+  .stage3d{position:relative;width:100%;aspect-ratio:16/10;min-height:280px;border-radius:6px;overflow:hidden;touch-action:none;background:radial-gradient(ellipse at 40% 38%,#1d2a6e 0%,var(--board-deep) 72%);border:1px solid var(--line)}
+  @media(max-width:640px){.stage3d{aspect-ratio:4/3}}
+  .stage3d canvas{position:absolute;inset:0;display:block;width:100%!important;height:100%!important}
+  .stage3d .fallback{position:absolute;left:0;right:0;bottom:0;padding:6px 10px;font-size:12px;color:var(--silk-dim);background:rgba(11,15,43,.85);text-align:center}
+  .stage3d .label3d{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:11px;font-weight:600}
+  .stage3d .label3d.pkt{color:#06120f;text-shadow:none;background:var(--c,currentColor);padding:2px 6px;border-radius:3px}
+  footer.foot{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:16px;color:var(--silk-dim);font-size:12.5px;border-top:1px solid var(--line)}
+  footer.foot .byline,.byline{margin-top:4px;font:600 13px var(--font-mono)!important;letter-spacing:.08em;color:var(--neon)!important;text-shadow:0 0 4px var(--neon),0 0 12px rgba(57,255,20,.6)}
+  .reveal{animation:rise .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*80ms)}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @media(max-width:860px){
+    .app .stage .zoomctl{top:56px;right:10px;transform:none;flex-direction:row}
+    .app{grid-template-columns:1fr;height:auto}
+    .app .stage{height:62vh;min-height:360px}
+    .panel{border-left:0;border-top:1px solid var(--line);overflow:visible}
+  }
+  @media(max-width:520px){
+    .hud .legend{font-size:9.5px;gap:3px 10px}
+    .phases li{padding:5px 7px;font-size:10px}
+    .controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  /* ===== end of theme ===== */
+
+  /* page-specific CSS: iVMS-4200 lab simulator. A wider control panel holds the simulated software window. */
+  .app.ivms{grid-template-columns:minmax(0,1fr) minmax(470px,570px)}
+  @media(max-width:1100px){.app.ivms{grid-template-columns:minmax(0,1fr) 450px}}
+  @media(max-width:860px){.app.ivms{grid-template-columns:1fr}.app.ivms .stage{height:64vh;min-height:420px}}
+  .hud .doorstat{background:rgba(11,15,43,.78);border:1px solid var(--line);border-radius:6px;backdrop-filter:blur(6px);font:500 11px var(--font-mono);color:var(--silk);padding:8px 10px;letter-spacing:.03em}
+  .hud .doorstat b{color:var(--cbt-gold);font-weight:600}
+  .hud .doorstat.alarm{border-color:var(--bad);color:#ffd9d3}
+  .small{font-size:12.5px}
+  .panel{gap:18px}
+  .narr .controls{margin-top:2px}
+  .bench{border:1px solid var(--line);border-radius:6px;padding:12px;background:var(--panel-2)}
+  .bench h2{margin-bottom:8px}
+  .brow{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1.1fr) minmax(0,.9fr);gap:8px;align-items:end}
+  .brow label{display:flex;flex-direction:column;gap:4px;font:500 11px var(--font-mono);color:var(--silk-dim);min-width:0}
+  .brow select,.brow input{width:100%}
+  .presets{display:flex;flex-wrap:wrap;gap:5px;margin:9px 0}
+  .presets button{border:1px solid var(--line);background:var(--board-deep);color:var(--silk-dim);border-radius:4px;padding:4px 8px;font:500 11px var(--font-mono);cursor:pointer}
+  .presets button:hover{border-color:var(--cbt-gold);color:var(--silk)}
+  .bbtns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .bbtns .btn{padding:9px 6px}
+  .dayout{font:500 11px var(--font-mono);color:var(--cbt-sky)}
+  .lastres{margin-top:9px;font:500 12px var(--font-mono);color:var(--silk-dim);min-height:1.4em}
+  .lastres b.ok{color:var(--ok)} .lastres b.bad{color:var(--bad)}
+  @media(max-width:520px){.stage:has(.nogl:not([hidden])) .hud-top{top:62px}.stage:has(.nogl:not([hidden])) .flat{top:54px;height:calc(100% - 54px)}}
+  @media(max-width:520px){.brow{grid-template-columns:1fr 1fr}.brow label:first-child{grid-column:1/-1}}
+
+  /* simulated iVMS-4200 window: a light look-alike in CBT colors (no vendor artwork) */
+  .win{background:#F4F5FA;color:#1A1D2E;border:1px solid #3a4690;border-radius:8px;overflow:hidden;font:13px/1.45 var(--font-body);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .win-title{display:flex;justify-content:space-between;align-items:center;gap:8px;background:linear-gradient(#283068,#1B2150);color:#eef1fa;padding:7px 12px;font:600 12px var(--font-mono);letter-spacing:.04em}
+  .win-title .dots{display:flex;gap:5px}.win-title .dots i{width:9px;height:9px;border-radius:50%;background:#4a5490}
+  .win-title .conn{font-weight:500;font-size:11px;color:#aeb3c9}
+  .win-title .conn b{color:#6FD49B}.win-title .conn b.off{color:#F0786A}
+  .win-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:#C9CEDF;border-bottom:1px solid #C9CEDF}
+  .win-tabs button{position:relative;background:#E8EAF3;border:0;padding:7px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;font:600 11.5px var(--font-body);color:#283068;cursor:pointer;min-width:0}
+  .win-tabs button svg{width:20px;height:20px}
+  .win-tabs button:hover{background:#F6F7FB}
+  .win-tabs button[aria-selected="true"]{background:#fff;box-shadow:inset 0 -3px 0 #E0B840}
+  .win-tabs .n{position:absolute;top:3px;left:5px;font:600 9.5px var(--font-mono);color:#7a809c}
+  .win-tabs .ck{position:absolute;top:3px;right:5px;width:13px;height:13px;border-radius:50%;background:#2f9e63;color:#fff;font:700 9px/13px var(--font-body);text-align:center}
+  .win-body{padding:12px;min-height:280px;background:#fff}
+  .win-note{margin:0;padding:8px 12px;background:#FBF4DD;border-top:1px solid #E8D9A5;color:#4a4020;font-size:12px}
+  .win :focus-visible{outline:2px solid #283068;outline-offset:1px}
+  .win h3{color:#283068;font-size:13px;margin:12px 0 6px}
+  .win h3:first-child{margin-top:0}
+  .win p{margin:6px 0}
+  .win .say{color:#4a5070;font-size:12.5px}
+  .win .wohint{font-size:12px;color:#6a5a1a;background:#FBF4DD;border:1px solid #EADBA6;border-radius:4px;padding:5px 8px;margin:0 0 10px}
+  .win .ro{color:#8a8fa8;font-size:11.5px}
+  .win .err{color:#B3261E;font-size:12.5px;font-weight:600}
+  .win .okmsg{color:#1f7a49;font-size:12.5px;font-weight:600}
+  .win .warnmsg{color:#8a5a00;font-size:12.5px;font-weight:600}
+  .win input[type=text],.win input[type=number],.win input[type=password],.win input[type=date],.win input[type=time],.win select{background:#fff;border:1px solid #B9BED2;color:#1A1D2E;border-radius:3px;padding:5px 7px;font:500 13px var(--font-mono);min-width:0;width:100%}
+  .win input:disabled,.win select:disabled{background:#EEF0F6;color:#8a8fa8}
+  .win input[type=checkbox],.win input[type=radio]{accent-color:#283068}
+  .tb{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+  .b2{border:1px solid #B9BED2;background:linear-gradient(#fff,#E9EBF3);color:#283068;border-radius:3px;padding:5px 10px;font:600 12px var(--font-body);cursor:pointer;white-space:nowrap}
+  .b2:hover:not(:disabled){border-color:#283068}
+  .b2:disabled{opacity:.45;cursor:not-allowed}
+  .b2.pri{background:#283068;border-color:#283068;color:#fff}
+  .b2.pri:hover:not(:disabled){background:#1B2150}
+  .b2 .plus{color:#2f9e63;font-weight:800}
+  .fgrid{display:grid;grid-template-columns:minmax(120px,170px) minmax(0,1fr);gap:6px 10px;align-items:center}
+  .fgrid label{font-size:12.5px;color:#3a4060}
+  .dlg{border:1px solid #C9CEDF;border-radius:4px;margin:10px 0;background:#F6F7FB}
+  .dlg>.dh{background:#E1E4EF;color:#283068;font:700 12px var(--font-body);padding:6px 10px;border-bottom:1px solid #C9CEDF}
+  .dlg>.db{padding:10px}
+  .dlg>.df{display:flex;justify-content:flex-end;gap:6px;padding:8px 10px;border-top:1px solid #DADDEA;background:#EEF0F6}
+  .tw{overflow-x:auto;border:1px solid #DADDEA;border-radius:3px}
+  .win table{font:500 12px var(--font-mono);color:#1A1D2E;width:100%}
+  .win th{background:#EEF0F6;color:#4a5070;border-bottom:1px solid #C9CEDF;font-size:10.5px;padding:6px 8px;white-space:nowrap}
+  .win td{border-bottom:1px solid #E6E8F0;padding:5px 8px;vertical-align:top}
+  .win tr.sel td{background:#FBF4DD}
+  .win tr.pick{cursor:pointer}
+  .win tr.pick:hover td{background:#F2F4FA}
+  .win tr.why td{color:#B3261E;font:500 11.5px var(--font-body);border-bottom:1px solid #E6E8F0;padding-top:0}
+  .win td.empty{color:#8a8fa8;font-family:var(--font-body);text-align:center;padding:14px}
+  .st{display:inline-block;padding:1px 7px;border-radius:10px;font:600 11px var(--font-mono)}
+  .st.on{background:#DDF3E6;color:#1f7a49}.st.off{background:#FBE1DE;color:#B3261E}.st.warn{background:#FBF0D0;color:#8a5a00}
+  .split{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr);gap:10px}
+  .tree{border:1px solid #DADDEA;border-radius:3px;padding:4px;display:flex;flex-direction:column;gap:1px;background:#FAFBFD;min-height:120px}
+  .tree button{display:flex;align-items:center;gap:6px;text-align:left;border:0;background:transparent;padding:5px 6px;border-radius:3px;font:500 12.5px var(--font-body);color:#1A1D2E;cursor:pointer;min-width:0}
+  .tree button.sub{padding-left:22px}
+  .tree button.sel{background:#283068;color:#fff}
+  .tree button:hover:not(.sel){background:#ECEEF6}
+  .tree .ro{font-size:11px;color:#8a8fa8}
+  .subtabs{display:flex;gap:2px;border-bottom:2px solid #283068;margin:0 0 10px;flex-wrap:wrap}
+  .subtabs button{border:1px solid #C9CEDF;border-bottom:0;background:#EEF0F6;color:#4a5070;padding:5px 11px;font:600 12px var(--font-body);border-radius:3px 3px 0 0;cursor:pointer}
+  .subtabs button[aria-selected="true"]{background:#283068;color:#fff;border-color:#283068}
+  .wp{display:grid;grid-template-columns:44px repeat(24,minmax(0,1fr));gap:1px;background:#DADDEA;border:1px solid #DADDEA;user-select:none}
+  .wp .hd{background:#F6F7FB;font:500 9px var(--font-mono);color:#6a7090;grid-column:span 2;padding:2px 0 1px;white-space:nowrap}
+  .wp .hd0{background:#F6F7FB}
+  .wp .dn{border:0;background:#F6F7FB;font:600 11px var(--font-body);color:#283068;text-align:left;padding:0 5px;cursor:pointer;height:24px}
+  .wp .dn.sel{background:#283068;color:#fff}
+  .wp .c{border:0;padding:0;height:24px;background:#fff;cursor:pointer;min-width:0}
+  .wp .c.on{background:#38B0E0}
+  .wp .c:hover{outline:1px solid #283068;outline-offset:-1px}
+  .wp.ro .c{cursor:default}
+  .wp.ro .c:hover{outline:0}
+  .rowform{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-end;margin-top:8px}
+  .rowform label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:#4a5070}
+  .rowform input{width:auto}
+  .rowform input[type=time]{width:122px}
+  .rowform input[type=date]{width:150px}
+  .daylist{margin:8px 0 0;padding:0;list-style:none;font:500 12px var(--font-mono);color:#3a4060;columns:2;column-gap:14px}
+  .daylist li{padding:1px 0}
+  .chk{display:flex;flex-direction:column;gap:3px;border:1px solid #DADDEA;border-radius:3px;padding:6px 8px;background:#FAFBFD;max-height:220px;overflow:auto}
+  .chk label{display:flex;gap:7px;align-items:center;font-size:12.5px}
+  .chk .grp{font:700 11px var(--font-body);color:#283068;margin-top:4px}
+  .doorbox{display:flex;gap:14px;align-items:center;border:1px solid #DADDEA;border-radius:4px;padding:10px;background:#FAFBFD}
+  .doorbox svg{width:64px;height:84px;flex:none}
+  .doorbox .ds{font:700 14px var(--font-body);color:#283068}
+  .doorbox .ds.bad{color:#B3261E}
+  .live{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;font-size:12.5px;border:1px solid #DADDEA;border-radius:4px;padding:8px 10px;margin-top:10px}
+  .live span{color:#6a7090}
+  .live b{font:600 12.5px var(--font-mono);color:#1A1D2E;overflow-wrap:anywhere}
+  .ev-ok{color:#1f7a49;font-weight:600}.ev-bad{color:#B3261E;font-weight:600}.ev-info{color:#283068}
+  .evnote{display:block;font:500 11px var(--font-body);color:#8a5a00}
+  .progress-bar{height:8px;background:#E1E4EF;border-radius:4px;overflow:hidden;margin:6px 0}
+  .progress-bar i{display:block;height:100%;background:#2f9e63;width:0}
+  @media(max-width:560px){
+    .fgrid{grid-template-columns:1fr;gap:2px}
+    .fgrid label{margin-top:6px}
+    .split{grid-template-columns:1fr}
+    .win-body{padding:10px}
+    .wp{grid-template-columns:36px repeat(24,minmax(0,1fr))}
+    .daylist{columns:1}
+  }
+
+  /* work order and checklist */
+  .wo{border:1px solid var(--line);border-radius:6px;background:var(--panel-2);padding:14px}
+  .wo-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .wo-head h2{margin:4px 0 2px;font-size:15px}
+  .wo .score{flex:none;flex-direction:column;align-items:flex-end;gap:0}
+  .wo h3{margin:14px 0 6px;color:var(--cbt-sky);font:600 11px var(--font-mono);letter-spacing:.1em;text-transform:uppercase}
+  .tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .tasks li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:2px 8px;align-items:start;border:1px solid var(--line);border-radius:5px;padding:7px 9px;background:var(--panel)}
+  .tasks li .mk{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line-2);font:700 11px/15px var(--font-body);text-align:center;color:transparent;margin-top:1px}
+  .tasks li.done .mk{background:var(--ok);border-color:var(--ok);color:#06220f}
+  .tasks li.part .mk{border-color:var(--warn);color:var(--warn)}
+  .tasks li .tt{font-weight:600;font-size:13.5px}
+  .tasks li .td{grid-column:2/-1;font-size:12.5px;color:var(--silk-dim)}
+  .tasks li .tip{grid-column:2/-1;font-size:12px;color:var(--warn)}
+  .tasks li .pt{font:600 12px var(--font-mono);color:var(--silk-dim);white-space:nowrap}
+  .tasks li.done .pt{color:var(--ok)}
+  .wo-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand-logo" href="https://www.cbt.edu" target="_blank" rel="noopener" aria-label="CBT Technology Institute"><img src="https://raw.githubusercontent.com/luisleon-cbt/items/main/cbt-logo-mark.png" alt="CBT Technology Institute"></a>
+    <div class="crumb"><a href="../index.html"><b>LSN-ACCESS</b> Access control systems</a> · Lesson 1 · Interactive D</div>
+  </div>
+</header>
+
+<div class="app ivms">
+  <section class="stage" id="stage" aria-label="3D view of the staff entrance lab bench: lab PC, controller, reader, relay, electric strike, and door. Drag to orbit, use the zoom buttons or scroll to zoom, click a part to learn what it does.">
+    <div class="hud hud-top">
+      <ol class="phases" aria-label="Phase">
+        <li data-p="read" style="--c:var(--cbt-gold)">Read</li>
+        <li data-p="decide" style="--c:var(--oper)">Decide</li>
+        <li data-p="act" style="--c:var(--alu)">Act</li>
+        <li data-p="log" style="--c:var(--cbt-sky)">Log</li>
+      </ol>
+      <div class="ticks">step <b id="hudStep">0</b></div>
+      <div class="doorstat" id="hudDoor">Door: <b>closed, locked</b></div>
+      <p class="credit">By Professor De Leon</p>
+    </div>
+    <div class="hud hud-bottom">
+      <div class="legend" aria-label="Colors">
+        <span style="--c:var(--cbt-gold)"><i></i>card data (Wiegand)</span>
+        <span style="--c:var(--cbt-sky)"><i></i>network, port 8000</span>
+        <span style="--c:var(--alu)"><i></i>granted, 12 V to the strike</span>
+        <span style="--c:var(--ctrl)"><i></i>denied or alarm</span>
+        <span style="--c:var(--out)"><i></i>door contact</span>
+        <span style="--c:var(--oper)"><i></i>exit button</span>
+      </div>
+      <div class="views" role="group" aria-label="Camera views">
+        <button type="button" data-view="overview" class="on">Overview</button>
+        <button type="button" data-view="door">Door</button>
+        <button type="button" id="follow" class="on" aria-pressed="true">Follow</button>
+      </div>
+    </div>
+    <div class="nogl" id="nogl" hidden>The 3D view needs WebGL and the 3D libraries, which are not available here. The flat board shows the same lab.</div>
+  </section>
+
+  <aside class="panel">
+    <header>
+      <p class="eyebrow">LSN-ACCESS · Lesson 1 · Lab simulator</p>
+      <h1>iVMS-4200 door programming</h1>
+      <p class="lede">Add the controller, set the door, enter the people and cards, build the schedule, download the permissions, and test the staff entrance. Practice here before you program the real controller.</p>
+    </header>
+
+    <section class="narr" aria-live="polite">
+      <div class="narr-head"><span class="ptag" id="phaseTag">Ready</span><span id="ctx">Score 0 of 100</span></div>
+      <p id="narration">Palmetto Dental Group wants its staff entrance programmed. Work through the iVMS-4200 tabs in order, 1 to 8, using the work order below the window. Then test cards on the test bench and watch the board.</p>
+      <div class="controls">
+        <button type="button" class="btn primary" id="btnRun">Replay test</button>
+        <button type="button" class="btn" id="btnStep">Step</button>
+        <button type="button" class="btn" id="btnBack">Step back</button>
+      </div>
+      <div class="speed"><label for="speed">Speed</label><input type="range" id="speed" min="0" max="4" step="1" value="2"><output id="speedOut">1×</output></div>
+      <p class="hint">Keyboard: Space steps, B steps back, R replays, + and - zoom.</p>
+    </section>
+
+    <section class="bench" aria-labelledby="benchH">
+      <h2 id="benchH">Test bench at the staff entrance</h2>
+      <div class="brow">
+        <label>Card in hand
+          <select id="tCard">
+            <option value="10045">10045 Ana Pérez</option>
+            <option value="10046">10046 Luis Romero</option>
+            <option value="10047">10047 Marta Sosa</option>
+            <option value="10099">10099 found in a drawer</option>
+          </select>
+        </label>
+        <label>Date <input type="date" id="tDate" value="2026-11-02"></label>
+        <label>Time <input type="time" id="tTime" value="09:00" step="60"></label>
+      </div>
+      <div class="dayout" id="tDay">Monday</div>
+      <div class="presets" role="group" aria-label="Quick times">
+        <button type="button" data-preset="2026-11-02 09:00">Mon 09:00</button>
+        <button type="button" data-preset="2026-11-06 18:59">Fri 18:59</button>
+        <button type="button" data-preset="2026-11-06 19:00">Fri 19:00</button>
+        <button type="button" data-preset="2026-11-07 12:30">Sat 12:30</button>
+        <button type="button" data-preset="2026-11-07 14:00">Sat 14:00</button>
+        <button type="button" data-preset="2026-11-08 10:00">Sun 10:00</button>
+        <button type="button" data-preset="2026-11-26 10:00">Thanksgiving 10:00</button>
+      </div>
+      <div class="bbtns">
+        <button type="button" class="btn primary" id="btnPresent">Present card</button>
+        <button type="button" class="btn" id="btnExit">Press exit button</button>
+        <button type="button" class="btn" id="btnHold" aria-pressed="false">Hold door open</button>
+        <button type="button" class="btn on" id="btnSound" aria-pressed="true">Sound on</button>
+      </div>
+      <div class="lastres" id="lastRes">No test yet.</div>
+      <p class="hint" style="margin-top:6px">Door timers run twice as fast as real time, so a 10 s timeout takes 5 s here.</p>
+    </section>
+
+    <section class="win" aria-label="Simulated iVMS-4200 window">
+      <div class="win-title"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>iVMS-4200 · Access control</span><span class="conn" id="winConn">PC 192.168.10.10</span></div>
+      <div class="win-tabs" role="tablist" aria-label="iVMS-4200 modules" id="winTabs"></div>
+      <div class="win-body" id="winBody" role="tabpanel"></div>
+      <p class="win-note">Newer iVMS-4200 3.x releases arrange these screens differently (a permission is called an access group there), but the order of work is the same: device, door, people and cards, schedule, permission, download, then test.</p>
+    </section>
+
+    <section class="wo" aria-labelledby="woH">
+      <div class="wo-head">
+        <div>
+          <p class="eyebrow">Work order PD-2611</p>
+          <h2 id="woH">Palmetto Dental Group, staff entrance</h2>
+          <p class="small muted" style="margin:0">1450 W 49th St, Hialeah, FL. Requested by Marta Sosa, office manager.</p>
+        </div>
+        <div class="score"><span class="big" id="scoreBig">0</span><span>of 100</span></div>
+      </div>
+      <p class="small" style="margin:10px 0 0">Controller DS-K2601 at <code>192.168.10.64</code>, port <code>8000</code>, user <code>admin</code>, password <code>Hialeah2026</code>. Lab PC <code>192.168.10.10</code>. Cards carry facility code 18; type only the card number.</p>
+      <h3>Set up (80 points)</h3>
+      <ol class="tasks" id="tasksA"></ol>
+      <h3>Test and record (20 points)</h3>
+      <ol class="tasks" id="tasksB"></ol>
+      <div class="wo-foot">
+        <span class="small muted">Your progress stays in this browser.</span>
+        <button type="button" class="btn" id="btnResetLab">Start the lab over</button>
+      </div>
+    </section>
+
+    <div class="info" id="info" style="font-size:13.5px;color:var(--silk-dim)">Click any part on the board to learn what it does.</div>
+    <section>
+      <h2>Things to notice</h2>
+      <ul class="notice">
+        <li>iVMS-4200 and the controller each keep their own copy of the settings. The controller decides with its copy, so a change counts only after Download Permission (or Hardware Parameters Downloading for the door settings).</li>
+        <li>A department permission covers everyone in that department, including people you add later, after the next download.</li>
+        <li>Door Magnetic must match the door contact. A normally closed contact goes with Remain Closed; a mismatch shows a closed door as open and raises door open timeout alarms.</li>
+        <li>A schedule's end time is not included: at 19:00 sharp, Office hours has already ended.</li>
+        <li>Remain open and Remain closed stay in effect until you send another anti-control command.</li>
+      </ul>
+    </section>
+    <footer style="font-size:12px;color:var(--silk-dim);border-top:1px solid var(--line);padding-top:12px">CBT Technology Institute · Flagler Campus · LSN-ACCESS Access control systems<div class="byline">By Professor De Leon</div></footer>
+  </aside>
+</div>
+
+<script>
+(function () {
+"use strict";
+const hasGSAP = typeof window.gsap !== 'undefined';
+const $ = s => document.querySelector(s);
+// LAB3D START: CBT 3D kit (modeled on the professor's "Tiny Machine Lab" reference, in CBT colors: navy board, gold traces). Paste as one block.
+// Needs Three.js r147 (three.min.js), examples/js/controls/OrbitControls.js, examples/js/renderers/CSS2DRenderer.js and GSAP 3.12.5.
+// Returns null when any of them (or WebGL) is missing: then draw the 2D fallback.
+//
+// const lab = Lab3D(stageEl, {
+//   board: {w: 22.4, d: 13.6, cx: 0, cz: 0.2, silk: 'BAY-4  REV 1.0  ...', seed: 11},
+//   views: {overview: {pos: [0, 17, 14.5], tgt: [0, 0, 0.4], want: 1.55}, cpu: {...}},
+//   colors: {copper: '#E0B840'}, palette: {...}
+// });
+// lab.chip(key, {x, z, w, d, h, nm, body, metal, cell})  -> rec {g, mat, el, val, sub, h, key}
+// lab.silkRect(x0, x1, z0, z1)   lab.zone(text, x, z, color)   lab.label(html, cls, x, y, z, parent)
+// lab.busMat(color, {base, rest})  lab.trace([{x,z}...], lines, mat)  lab.glowBus(mat)
+// lab.fly([{x,z}...], text, color, {y, dur}) -> GSAP timeline (packet sphere + halo + pill label)
+// lab.hi(rec, color)  lab.clear()  lab.pop(rec)  lab.setView(name)  lab.zoom(factor)  lab.intro()  lab.onPick(fn)  lab.clearPackets()
+// Zoom buttons (+, -, FIT) and the + - 0 keys are added to the stage automatically (opts.zoomUI: false turns them off; opts.fitView picks the FIT view).
+function Lab3D(stage, opts) {
+  opts = opts || {};
+  const hasG = typeof window.gsap !== 'undefined';
+  if (!window.THREE || !THREE.OrbitControls || !THREE.CSS2DRenderer || !hasG) return null;
+  try { const t = document.createElement('canvas'); if (!(t.getContext('webgl') || t.getContext('experimental-webgl'))) return null; } catch (e) { return null; }
+  const T = THREE;
+  const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const B = Object.assign({w: 22.4, d: 13.6, cx: 0, cz: 0.2, silk: '', seed: 11}, opts.board || {});
+  // CBT palette (override any key with opts.palette)
+  const P = Object.assign({
+    boardA: '#1a2257', boardB: '#10163f', dots: 'rgba(238,241,250,0.04)', trace: '224,184,64', via: '#0a0e2a',
+    silkText: 'rgba(238,241,250,0.34)', edge: 0x0d1238, clear: 0x0b0f2b, sky: 0xdfe6ff, ground: 0x10163f, rim: 0x38b0e0,
+    chip: '#161a2e', cell: '#1c2138', pinDot: 0x7a809c, font: '"Red Hat Mono", ui-monospace, monospace',
+    uiBg: 'rgba(11,15,43,.82)', uiLine: '#2a3470', uiText: '#eef1fa', uiHover: '#171f4f', uiAccent: '#E0B840'
+  }, opts.palette || {});
+  const COPPER = (opts.colors && opts.colors.copper) || '#E0B840';
+
+  const renderer = new T.WebGLRenderer({antialias: true, powerPreference: 'high-performance'});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = T.sRGBEncoding;
+  renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+  renderer.setClearColor(P.clear, 0);
+  renderer.domElement.className = 'gl';
+  stage.prepend(renderer.domElement);
+  const labelR = new T.CSS2DRenderer();
+  labelR.domElement.className = 'labels';
+  renderer.domElement.after(labelR.domElement);
+
+  const scene = new T.Scene();
+  scene.fog = new T.Fog(P.clear, 34, 70);
+  const camera = new T.PerspectiveCamera(40, 1, 0.1, 200);
+  const controls = new T.OrbitControls(camera, labelR.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.46; controls.minDistance = 5; controls.maxDistance = 42;
+  controls.zoomSpeed = 1.1;
+  // keep the mouse wheel inside the 3D view: zoom the board, do not scroll the page
+  stage.addEventListener('wheel', e => e.preventDefault(), {passive: false});
+
+  scene.add(new T.HemisphereLight(P.sky, P.ground, 0.6));
+  const sun = new T.DirectionalLight(0xfff1dc, 1.0); sun.position.set(-7, 16, 9); sun.castShadow = true;
+  sun.shadow.mapSize.set(1536, 1536);
+  Object.assign(sun.shadow.camera, {left: -B.w / 2 - 2, right: B.w / 2 + 2, top: B.d / 2 + 2, bottom: -B.d / 2 - 2, near: 1, far: 44});
+  sun.shadow.bias = -0.0005; scene.add(sun);
+  const rim = new T.DirectionalLight(P.rim, 0.35); rim.position.set(12, 6, -10); scene.add(rim);
+
+  // board: a canvas texture with a dot grid, random copper traces, vias, mounting holes and silkscreen
+  function rng(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const cv = document.createElement('canvas'); cv.width = 2048; cv.height = Math.round(2048 * B.d / B.w);
+  function drawBoard() {
+    const g = cv.getContext('2d'), W = cv.width, H = cv.height, rnd = rng(B.seed);
+    const grd = g.createLinearGradient(0, 0, W, H); grd.addColorStop(0, P.boardA); grd.addColorStop(1, P.boardB);
+    g.fillStyle = grd; g.fillRect(0, 0, W, H);
+    g.fillStyle = P.dots;
+    for (let x = 0; x < W; x += 28) for (let y = 0; y < H; y += 28) g.fillRect(x, y, 2, 2);
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    for (let i = 0; i < 85; i++) {
+      let x = rnd() * W, y = rnd() * H, dir = Math.floor(rnd() * 8);
+      g.beginPath(); g.moveTo(x, y);
+      for (let k = 0; k < 4; k++) { dir = (dir + (rnd() < .5 ? 1 : 7)) % 8; const len = 30 + rnd() * 170, a = dir * Math.PI / 4; x += Math.cos(a) * len; y += Math.sin(a) * len; g.lineTo(x, y); }
+      g.strokeStyle = 'rgba(' + P.trace + ',' + (0.06 + rnd() * 0.09) + ')'; g.lineWidth = 2 + rnd() * 3; g.stroke();
+      g.beginPath(); g.arc(x, y, 5.5, 0, Math.PI * 2); g.fillStyle = 'rgba(' + P.trace + ',0.22)'; g.fill();
+      g.beginPath(); g.arc(x, y, 2.2, 0, Math.PI * 2); g.fillStyle = P.via; g.fill();
+    }
+    [[60, 60], [W - 60, 60], [60, H - 60], [W - 60, H - 60]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 26, 0, Math.PI * 2); g.fillStyle = 'rgba(' + P.trace + ',0.35)'; g.fill(); g.beginPath(); g.arc(x, y, 15, 0, Math.PI * 2); g.fillStyle = P.via; g.fill(); });
+    g.font = '500 24px ' + P.font;
+    g.fillStyle = P.silkText;
+    if (B.silk) g.fillText(B.silk, 120, H - 48);
+    g.fillText('U1', 120, 92);
+  }
+  drawBoard();
+  const tex = new T.CanvasTexture(cv); tex.encoding = T.sRGBEncoding; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawBoard(); tex.needsUpdate = true; });
+  const edge = new T.MeshStandardMaterial({color: P.edge, roughness: .8});
+  const topM = new T.MeshStandardMaterial({map: tex, roughness: .62, metalness: .05});
+  const board = new T.Mesh(new T.BoxGeometry(B.w, 0.36, B.d), [edge, edge, topM, edge, edge, edge]);
+  board.position.set(B.cx, -0.18, B.cz); board.receiveShadow = true; scene.add(board);
+
+  const unit = new T.BoxGeometry(1, 1, 1);
+  const silk = new T.MeshBasicMaterial({color: 0xeef1fa, transparent: true, opacity: .5});
+  function silkRect(x0, x1, z0, z1) {
+    const t = 0.05;
+    [[x0, x1, z0, z0], [x0, x1, z1, z1], [x0, x0, z0, z1], [x1, x1, z0, z1]].forEach(([a, b, c, d]) => {
+      const m = new T.Mesh(unit, silk); m.scale.set(Math.abs(b - a) + t, 0.01, Math.abs(d - c) + t);
+      m.position.set((a + b) / 2, 0.006, (c + d) / 2); scene.add(m);
+    });
+  }
+  function busMat(color, o) {
+    o = o || {};
+    const m = new T.MeshStandardMaterial({color: new T.Color(o.base || color).multiplyScalar(o.base ? 1 : 0.55), emissive: new T.Color(color), emissiveIntensity: o.rest != null ? o.rest : 0.22, roughness: .35, metalness: .65});
+    m.userData.rest = m.emissiveIntensity; return m;
+  }
+  const nrm = (a, b) => { const dx = b.x - a.x, dz = b.z - a.z, L = Math.hypot(dx, dz) || 1; return {x: -dz / L, z: dx / L}; };
+  function offsetLine(p, o) {
+    return p.map((q, i) => {
+      const nIn = i > 0 ? nrm(p[i - 1], q) : null, nOut = i < p.length - 1 ? nrm(q, p[i + 1]) : null;
+      let n = nIn || nOut;
+      if (nIn && nOut) { const k = 1 / (1 + nIn.x * nOut.x + nIn.z * nOut.z); n = {x: (nIn.x + nOut.x) * k, z: (nIn.z + nOut.z) * k}; }
+      return {x: q.x + n.x * o, z: q.z + n.z * o};
+    });
+  }
+  function trace(points, lines, mat) {
+    const gap = 0.075, w = 0.04;
+    for (let li = 0; li < lines; li++) {
+      const pts = offsetLine(points, (li - (lines - 1) / 2) * gap);
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1], dx = b.x - a.x, dz = b.z - a.z, L = Math.hypot(dx, dz);
+        const m = new T.Mesh(unit, mat); m.scale.set(L + w, 0.03, w); m.position.set((a.x + b.x) / 2, 0.016, (a.z + b.z) / 2); m.rotation.y = -Math.atan2(dz, dx);
+        m.receiveShadow = true; scene.add(m);
+      }
+      [pts[0], pts[pts.length - 1]].forEach(p => { const pad = new T.Mesh(unit, mat); pad.scale.set(0.07, 0.032, 0.07); pad.position.set(p.x, 0.016, p.z); scene.add(pad); });
+    }
+  }
+  function glowBus(m) {
+    if (!m) return;
+    gsap.killTweensOf(m);
+    gsap.timeline().to(m, {emissiveIntensity: 1.8, duration: 0.2}).to(m, {emissiveIntensity: m.userData.rest, duration: 1.4});
+  }
+  function label(html, cls, x, y, z, parent) {
+    const el = document.createElement('div'); el.className = cls; el.innerHTML = html;
+    const o = new T.CSS2DObject(el); o.position.set(x, y, z); (parent || scene).add(o); el._obj = o; return el;
+  }
+  function zone(text, x, z, color) { const el = label(text, 'zone', x, 0.05, z); if (color) el.style.setProperty('--c', color); return el; }
+
+  const pinSpots = [], recs = {}, pickables = [];
+  const dotMat = new T.MeshBasicMaterial({color: P.pinDot});
+  function chip(key, o) {
+    const w = o.w || 1.4, d = o.d || 1.2, h = o.h || (o.cell ? 0.28 : 0.34);
+    const g = new T.Group(); g.position.set(o.x, 0, o.z);
+    const mat = new T.MeshStandardMaterial({color: o.body || (o.cell ? P.cell : P.chip), roughness: .42, metalness: o.metal || .22, emissive: new T.Color(0xffffff), emissiveIntensity: 0});
+    const body = new T.Mesh(unit, mat); body.scale.set(w, h, d); body.position.y = h / 2 + 0.03; body.castShadow = true; body.receiveShadow = true; g.add(body);
+    body.userData.key = key; pickables.push(body);
+    if (!o.metal) { const dot = new T.Mesh(new T.CircleGeometry(0.05, 16), dotMat); dot.rotation.x = -Math.PI / 2; dot.position.set(-w / 2 + 0.14, h + 0.035, -d / 2 + 0.14); g.add(dot); }
+    if (!o.noPins) {
+      const n = Math.max(2, Math.floor((w - 0.2) / 0.22));
+      for (let i = 0; i < n; i++) { const px = -w / 2 + 0.14 + i * ((w - 0.28) / (n - 1)); pinSpots.push([o.x + px, o.z - d / 2 - 0.07], [o.x + px, o.z + d / 2 + 0.07]); }
+    }
+    scene.add(g);
+    const el = label('<span class="nm">' + (o.nm || key) + '</span><span class="vl"></span><span class="sb"></span>', 'tag' + (o.cell ? ' cell' : ''), 0, h + 0.08, 0, g);
+    const rec = {key: key, cell: !!o.cell, g: g, mat: mat, el: el, val: el.querySelector('.vl'), sub: el.querySelector('.sb'), h: h, x: o.x, z: o.z};
+    recs[key] = rec; return rec;
+  }
+  function finishPins() {
+    const pinGeo = new T.BoxGeometry(0.07, 0.05, 0.16), pinMat = new T.MeshStandardMaterial({color: 0xc9ced1, metalness: .9, roughness: .3});
+    const pins = new T.InstancedMesh(pinGeo, pinMat, Math.max(1, pinSpots.length)), mtx = new T.Matrix4();
+    pinSpots.forEach(([x, z], i) => { mtx.makeTranslation(x, 0.045, z); pins.setMatrixAt(i, mtx); });
+    scene.add(pins);
+  }
+
+  // packets: a small sphere with an additive halo and a pill label
+  const haloCv = document.createElement('canvas'); haloCv.width = haloCv.height = 64;
+  const hg = haloCv.getContext('2d'), rg = hg.createRadialGradient(32, 32, 0, 32, 32, 32);
+  rg.addColorStop(0, 'rgba(255,255,255,1)'); rg.addColorStop(.35, 'rgba(255,255,255,.35)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
+  hg.fillStyle = rg; hg.fillRect(0, 0, 64, 64);
+  const haloTex = new T.CanvasTexture(haloCv);
+  const pktGeo = new T.SphereGeometry(0.13, 20, 14);
+  const live = new Set();
+  function removePacket(p) {
+    scene.remove(p.mesh); if (p.el.parentNode) p.el.parentNode.removeChild(p.el);
+    p.mesh.material.dispose(); p.halo.material.dispose(); live.delete(p);
+  }
+  function fly(path, text, color, o) {
+    o = o || {};
+    const y = o.y != null ? o.y : 0.8;
+    const v = path.map(p => new T.Vector3(p.x, y, p.z));
+    const mesh = new T.Mesh(pktGeo, new T.MeshBasicMaterial({color: new T.Color(color)}));
+    const halo = new T.Sprite(new T.SpriteMaterial({map: haloTex, color: new T.Color(color), blending: T.AdditiveBlending, depthWrite: false, transparent: true}));
+    halo.scale.set(1.1, 1.1, 1.1); mesh.add(halo);
+    const el = document.createElement('div'); el.className = 'pkt'; el.style.setProperty('--c', color); el.textContent = text;
+    const lab = new T.CSS2DObject(el); lab.position.set(0, 0.42, 0); mesh.add(lab);
+    mesh.position.copy(v[0]); mesh.scale.setScalar(0.01); mesh.visible = false; scene.add(mesh);
+    const p = {mesh: mesh, halo: halo, el: el}; live.add(p);
+    let L = 0; for (let i = 1; i < v.length; i++) L += v[i].distanceTo(v[i - 1]);
+    const total = o.dur || Math.max(0.5, Math.min(2.2, L / 7));
+    const tl = gsap.timeline({onComplete: () => removePacket(p)});
+    tl.call(() => { mesh.visible = true; });
+    tl.to(mesh.scale, {x: 1, y: 1, z: 1, duration: 0.18, ease: 'back.out(2)'});
+    for (let i = 1; i < v.length; i++) { const seg = v[i].distanceTo(v[i - 1]); tl.to(mesh.position, {x: v[i].x, y: v[i].y, z: v[i].z, duration: L ? total * seg / L : 0.1, ease: 'none'}); }
+    tl.to(mesh.scale, {x: 0.01, y: 0.01, z: 0.01, duration: 0.18, ease: 'power2.in'});
+    return tl;
+  }
+  function clearPackets() { Array.from(live).forEach(removePacket); }
+
+  const active = new Set();
+  function hi(rec, color) {
+    if (!rec) return;
+    rec.mat.emissive.set(color).convertSRGBToLinear(); gsap.to(rec.mat, {emissiveIntensity: rec.cell ? 0.42 : 0.34, duration: 0.3, overwrite: 'auto'});
+    rec.el.classList.add('on'); active.add(rec);
+  }
+  function clear() {
+    active.forEach(r => { gsap.to(r.mat, {emissiveIntensity: 0, duration: 0.5, overwrite: 'auto'}); r.el.classList.remove('on'); });
+    active.clear();
+  }
+  function pop(rec, big) {
+    if (!rec || RM) return;
+    gsap.fromTo(rec.g.scale, {x: 1.12, y: big ? 1.8 : 1.5, z: 1.12}, {x: 1, y: 1, z: 1, duration: 0.65, ease: 'elastic.out(1,0.5)'});
+  }
+
+  // camera views keep the whole subject in frame on narrow screens
+  const views = opts.views || {overview: {pos: [0, 17, 14.5], tgt: [0, 0, 0.4], want: 1.55}};
+  function viewFor(name) {
+    const b = views[name] || views.overview;
+    const tgt = new T.Vector3(...b.tgt), pos = new T.Vector3(...b.pos);
+    const want = b.want || 1.25;
+    let f = camera.aspect < want ? Math.min(2.4, want / camera.aspect) : 1;
+    if (name === 'overview' || !views[name]) {
+      // the overview (and FIT) must show the whole board width, also on narrow phone screens,
+      // leaving room for the zoom buttons at the right edge
+      const tanH = Math.tan(T.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
+      const need = (B.w / 2 + 0.5) / (tanH * 0.92) + B.d * 0.25;
+      f = Math.max(f, need / pos.distanceTo(tgt));
+      controls.maxDistance = Math.max(controls.maxDistance, need * 1.3);
+      if (scene.fog) { scene.fog.near = Math.max(scene.fog.near, need * 1.1); scene.fog.far = Math.max(scene.fog.far, need * 2.6); }
+    }
+    pos.sub(tgt).multiplyScalar(f).add(tgt);
+    return {pos: pos, tgt: tgt};
+  }
+  function setView(name, instant) {
+    const v = viewFor(name), d = (RM || instant) ? 0 : 1.2;
+    const k = 1 / (gsap.globalTimeline.timeScale() || 1);
+    gsap.to(camera.position, {x: v.pos.x, y: v.pos.y, z: v.pos.z, duration: d, ease: 'power2.inOut', overwrite: 'auto'}).timeScale(k);
+    gsap.to(controls.target, {x: v.tgt.x, y: v.tgt.y, z: v.tgt.z, duration: d, ease: 'power2.inOut', overwrite: 'auto'}).timeScale(k);
+  }
+  function focusOn(x, z, dist) {
+    const d = (dist || 7) * (camera.aspect < 1.2 ? Math.min(2.2, 1.25 / camera.aspect) : 1);
+    const k = 1 / (gsap.globalTimeline.timeScale() || 1);
+    gsap.to(camera.position, {x: x * 0.8, y: d * 1.15, z: z + d, duration: RM ? 0 : 1.0, ease: 'power2.inOut', overwrite: 'auto'}).timeScale(k);
+    gsap.to(controls.target, {x: x, y: 0, z: z, duration: RM ? 0 : 1.0, ease: 'power2.inOut', overwrite: 'auto'}).timeScale(k);
+  }
+
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px';
+    labelR.setSize(w, h);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+    stage.style.setProperty('--lab', Math.max(7, Math.min(12, w / 92)) + 'px');
+  }
+  // zoom buttons (+, -, Fit) and keys (+, -, 0): the mouse wheel and pinch still work, but buttons always do
+  function zoom(f) {
+    const t = controls.target, off = camera.position.clone().sub(t);
+    off.setLength(Math.max(controls.minDistance, Math.min(controls.maxDistance, off.length() * f)));
+    const p = t.clone().add(off), k = 1 / (gsap.globalTimeline.timeScale() || 1);
+    gsap.to(camera.position, {x: p.x, y: p.y, z: p.z, duration: RM ? 0 : 0.45, ease: 'power2.out', overwrite: 'auto'}).timeScale(k);
+  }
+  if (opts.zoomUI !== false) {
+    if (!document.getElementById('lab3d-zoom-css')) {
+      const st = document.createElement('style'); st.id = 'lab3d-zoom-css';
+      st.textContent = '.zoomctl{position:absolute;z-index:4;right:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;padding:4px;background:' + P.uiBg + ';border:1px solid ' + P.uiLine + ';border-radius:6px;backdrop-filter:blur(6px)}' +
+        '.zoomctl button{width:38px;height:34px;border:0;border-radius:4px;background:transparent;color:' + P.uiText + ';font:600 18px/1 ' + P.font + ';cursor:pointer;padding:0}' +
+        '.zoomctl button.fit{font-size:10px;letter-spacing:.06em;height:28px}.zoomctl button:hover{background:' + P.uiHover + ';color:' + P.uiAccent + '}' +
+        '.zoomctl button:focus-visible{outline:2px solid ' + P.uiAccent + ';outline-offset:1px}@media(max-width:520px){.zoomctl{right:10px}.zoomctl button{width:34px;height:32px}}';
+      document.head.appendChild(st);
+    }
+    const box = document.createElement('div'); box.className = 'zoomctl'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Zoom');
+    box.innerHTML = '<button type="button" data-z="in" aria-label="Zoom in" title="Zoom in (+)">+</button>' +
+      '<button type="button" data-z="out" aria-label="Zoom out" title="Zoom out (-)">&minus;</button>' +
+      '<button type="button" class="fit" data-z="fit" aria-label="Show the whole board" title="Show the whole board (0)">FIT</button>';
+    stage.appendChild(box);
+    ['pointerdown', 'pointerup', 'wheel', 'click'].forEach(ev => box.addEventListener(ev, e => e.stopPropagation()));
+    box.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.z === 'in') zoom(0.75); else if (b.dataset.z === 'out') zoom(1.33); else setView(opts.fitView || 'overview');
+    });
+    document.addEventListener('keydown', e => {
+      const t = e.target, tag = t && t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+      if (e.key === '+' || e.key === '=') zoom(0.75);
+      else if (e.key === '-' || e.key === '_') zoom(1.33);
+      else if (e.key === '0') setView(opts.fitView || 'overview');
+    });
+  }
+  new ResizeObserver(resize).observe(stage); resize();
+  (function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); labelR.render(scene, camera); })();
+
+  // picking: click (not drag) on a chip body
+  const ray = new T.Raycaster(), mouse = new T.Vector2(); let down = null, pickCb = null;
+  labelR.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+  labelR.domElement.addEventListener('pointerup', e => {
+    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5 || !pickCb) return;
+    const r = labelR.domElement.getBoundingClientRect();
+    mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(mouse, camera);
+    const hit = ray.intersectObjects(pickables, false)[0];
+    if (hit) pickCb(hit.object.userData.key);
+  });
+
+  function intro() {
+    const v = viewFor('overview'); camera.position.copy(v.pos); controls.target.copy(v.tgt);
+    if (RM) return;
+    gsap.from(camera.position, {x: v.pos.x - 4, y: v.pos.y + 12, z: v.pos.z + 10, duration: 1.8, ease: 'power3.out'});
+    gsap.from(Object.values(recs).map(r => r.g.position), {y: 2.2, duration: 0.7, ease: 'back.out(1.6)', stagger: 0.03, delay: 0.2});
+  }
+
+  const labApi = {T: T, scene: scene, camera: camera, controls: controls, renderer: renderer, recs: recs,
+    chip: chip, finishPins: finishPins, silkRect: silkRect, zone: zone, label: label, busMat: busMat, trace: trace, glowBus: glowBus,
+    fly: fly, clearPackets: clearPackets, hi: hi, clear: clear, pop: pop, setView: setView, focusOn: focusOn, intro: intro, zoom: zoom,
+    onPick: cb => { pickCb = cb; }, unit: unit};
+  (window.__labs = window.__labs || []).push(labApi);   // lets tests reach the camera
+  return labApi;
+}
+// LAB3D END
+
+// LOGIC START: plain functions (no DOM). The node tests in the build folder load this block by its markers.
+const AC = (function () {
+  const LAB = {addr: '192.168.10.64', factory: '192.0.0.64', port: 8000, user: 'admin', pass: 'Hialeah2026', dialup: 1,
+    type: 'Access Controller_DS-K2601', pc: '192.168.10.10'};
+  const TYPES = ['Access Controller_DS-K2601', 'Access Controller_DS-K2602', 'Access Controller_DS-K2604'];
+  const DOOR_DEFAULTS = {mag: 'closed', exitBtn: 'open', lockTime: 5, disabled: 15, timeout: 10};
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  // the work order schedule "Office hours": Monday to Friday 07:00 to 19:00, Saturday 08:00 to 13:00, Sunday closed
+  const OFFICE = [[[420, 1140]], [[420, 1140]], [[420, 1140]], [[420, 1140]], [[420, 1140]], [[480, 780]], []];
+  const SCEN = [
+    {name: 'Ana Pérez', dept: 'Front desk', card: '10045'},
+    {name: 'Luis Romero', dept: 'Clinical', card: '10046'},
+    {name: 'Marta Sosa', dept: 'Front desk', card: '10047'}
+  ];
+
+  const toMin = t => {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '').trim());
+    if (!m) return NaN;
+    const h = +m[1], mi = +m[2];
+    if (h > 24 || mi > 59 || (h === 24 && mi)) return NaN;
+    return h * 60 + mi;
+  };
+  const hhmm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  function norm(spans) {
+    const s = (spans || []).filter(x => x[1] > x[0]).map(x => [Math.max(0, x[0]), Math.min(1440, x[1])]).sort((a, b) => a[0] - b[0]);
+    const out = [];
+    s.forEach(x => { const l = out[out.length - 1]; if (l && x[0] <= l[1]) l[1] = Math.max(l[1], x[1]); else out.push([x[0], x[1]]); });
+    return out;
+  }
+  const addSpan = (spans, a, b) => norm((spans || []).concat([[a, b]]));
+  function removeSpan(spans, a, b) {
+    const out = [];
+    (spans || []).forEach(([s, e]) => { if (e <= a || s >= b) out.push([s, e]); else { if (s < a) out.push([s, a]); if (e > b) out.push([b, e]); } });
+    return norm(out);
+  }
+  const inSpans = (spans, m) => (spans || []).some(([s, e]) => m >= s && m < e);   // the end minute is not included
+  const spansText = spans => spans && spans.length ? spans.map(([s, e]) => hhmm(s) + ' to ' + hhmm(e)).join(' and ') : 'no hours';
+  function weekday(date) {   // 0 = Monday ... 6 = Sunday
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) return -1;
+    const d = new Date(date + 'T00:00:00Z');
+    if (isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== date) return -1;
+    return (d.getUTCDay() + 6) % 7;
+  }
+  const simple = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const validIP = a => /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(String(a || '').trim()) && String(a).trim().split('.').every(o => +o <= 255);
+  const sameWeek = (a, b) => JSON.stringify((a || []).map(norm)) === JSON.stringify((b || []).map(norm));
+
+  // does iVMS-4200 reach the controller with these settings?
+  function connect(dev) {
+    if (!dev) return {online: false, reason: 'No device.'};
+    if (dev.conn !== 'TCP/IP') return {online: false, reason: dev.conn === 'COM port' ? 'No serial cable runs to this controller. This lab connects over the network: choose TCP/IP.' : 'Ehome needs a network center account set up on the controller. This lab uses TCP/IP.'};
+    const a = String(dev.addr || '').trim();
+    if (a === LAB.factory) return {online: false, reason: 'No reply from 192.0.0.64. That is the factory address; this controller was changed to ' + LAB.addr + ' when it was activated.'};
+    if (a !== LAB.addr) return {online: false, reason: 'No reply from ' + a + '. Check the address on the work order and on the controller label.'};
+    if (+dev.port !== LAB.port) return {online: false, reason: 'Connection refused on port ' + dev.port + '. The controller listens for iVMS-4200 on port 8000.'};
+    if (+dev.dialup !== LAB.dialup) return {online: false, reason: 'Dial-up must be 1 for a TCP/IP connection.'};
+    if (dev.user !== LAB.user || dev.pass !== LAB.pass) return {online: false, reason: 'Login failed: user name or password error.'};
+    return {online: true, reason: 'Logged in.'};
+  }
+  const onlineDev = cfg => (cfg.devices || []).find(d => connect(d).online) || null;
+
+  function fresh() {
+    const all = () => [[[0, 1440]], [[0, 1440]], [[0, 1440]], [[0, 1440]], [[0, 1440]], [[0, 1440]], [[0, 1440]]];
+    return {
+      cfg: {
+        devices: [], depts: [{id: 'root', name: 'Default', parent: null}], persons: [], cards: [],
+        weekPlans: [{id: 'wp-en', name: 'Enable Week Plan by Default', fixed: true, days: all()},
+          {id: 'wp-dis', name: 'Disable Week Plan by Default', fixed: true, days: [[], [], [], [], [], [], []]}],
+        holGroups: [],
+        templates: [{id: 'tp-en', name: 'Default Enable Schedule Template', fixed: true, week: 'wp-en', hols: []}],
+        perms: [], seq: 1
+      },
+      ctrl: {perm: null, door: Object.assign({}, DOOR_DEFAULTS), doorDl: false, mode: 'normal'},
+      log: [], flags: {}, events: [], evSeq: 0, clock: {date: '2026-11-02', sec: 9 * 3600}
+    };
+  }
+
+  // what Download Permission writes into the controller for one device: every issued card with its rights on this door
+  function compile(cfg, devId) {
+    const cards = {};
+    const inDept = (pDept, target) => { let d = pDept, g = 0; while (d && g++ < 20) { if (d === target) return true; const x = cfg.depts.find(y => y.id === d); d = x ? x.parent : null; } return false; };
+    const right = tid => {
+      const t = cfg.templates.find(x => x.id === tid); if (!t) return null;
+      const w = cfg.weekPlans.find(x => x.id === t.week);
+      const hol = [];
+      (t.hols || []).forEach(gid => { const g = cfg.holGroups.find(x => x.id === gid); if (g) g.hols.forEach(h => hol.push({start: h.start, end: h.end, spans: norm(h.spans)})); });
+      return {tpl: t.name, week: w ? w.days.map(norm) : [[], [], [], [], [], [], []], hol: hol};
+    };
+    cfg.cards.forEach(c => {
+      if (c.status === 'blank' || !c.person) return;
+      const p = cfg.persons.find(x => x.id === c.person); if (!p) return;
+      const rights = [];
+      cfg.perms.forEach(pm => {
+        if (pm.dev !== devId) return;
+        const hit = pm.by === 'person' ? pm.target === p.id : inDept(p.dept, pm.target);
+        if (!hit) return;
+        const r = right(pm.tpl); if (r) rights.push(r);
+      });
+      cards[c.no] = {status: c.status, person: p.name, act: c.act, exp: c.exp, rights: rights};
+    });
+    return {cards: cards};
+  }
+
+  // the controller decides with its own memory only
+  function ctrlDecide(perm, no, date, min) {
+    const c = perm && perm.cards[no];
+    if (!c) return {code: 'unrecognized'};
+    if (c.status === 'lost') return {code: 'lost', card: c};
+    if ((c.act && date < c.act) || (c.exp && date > c.exp)) return {code: 'expired', card: c};
+    if (!c.rights.length) return {code: 'no_perm', card: c};
+    const wd = weekday(date);
+    let first = null;
+    for (const r of c.rights) {
+      const hol = r.hol.find(h => date >= h.start && date <= h.end);
+      const spans = hol ? hol.spans : r.week[wd];
+      const info = {tpl: r.tpl, holiday: !!hol, spans: spans};
+      if (!first) first = info;
+      if (inSpans(spans, min)) return Object.assign({code: 'granted', card: c}, info);
+    }
+    return Object.assign({code: 'schedule', card: c}, first);
+  }
+
+  // a card presentation: granted, or why not. "not_downloaded" means the software would allow it but the controller was never told.
+  function decide(cfg, ctrl, no, date, time) {
+    const min = toMin(time);
+    if (weekday(date) < 0 || isNaN(min)) return {code: 'bad_input'};
+    const base = ctrlDecide(ctrl.perm, no, date, min);
+    let code = base.code;
+    if (code === 'granted' && ctrl.mode === 'remainClosed') code = 'remain_closed';
+    const swGrant = (cfg.devices || []).some(d => ctrlDecide(compile(cfg, d.id), no, date, min).code === 'granted');
+    if (code !== 'granted' && code !== 'remain_closed' && swGrant) code = 'not_downloaded';
+    return Object.assign({}, base, {code: code, base: base.code, no: no, date: date, time: time, day: weekday(date), min: min});
+  }
+
+  // the door contact is normally closed and the exit button is normally open (Lab 1 wiring)
+  const perceivedOpen = (mag, physOpen) => mag === 'closed' ? !!physOpen : !physOpen;
+  const perceivedPressed = (exitBtn, physPressed) => exitBtn === 'open' ? !!physPressed : !physPressed;
+
+  const doorOK = d => !!d && d.mag === 'closed' && d.exitBtn === 'open' && +d.lockTime === 5 && +d.disabled === 15 && +d.timeout === 10;
+
+  // the work order checklist, out of 100
+  function score(st) {
+    const cfg = st.cfg, ctrl = st.ctrl, log = st.log || [], fl = st.flags || {};
+    const items = [];
+    const add = (id, max, pts, tip) => items.push({id: id, max: max, pts: Math.max(0, Math.min(max, pts)), tip: pts >= max ? '' : tip});
+    const dev = onlineDev(cfg);
+    // 1 controller
+    if (dev) add('ctrl', 12, dev.type === LAB.type ? 12 : 9, 'The type should be Access Controller_DS-K2601.');
+    else add('ctrl', 12, 0, cfg.devices.length ? 'The controller is Offline: ' + connect(cfg.devices[0]).reason : 'Add the controller in the Controller tab.');
+    // 2 door parameters
+    let dp = 0;
+    if (dev && doorOK(dev.door)) dp += 5;
+    if (ctrl.doorDl && doorOK(ctrl.door) && dev && doorOK(dev.door)) dp += 5;
+    add('door', 10, dp, !dev ? 'Add the controller first.' : !doorOK(dev.door) ? 'Door_1 values do not match the work order yet (press Edit to save them).' : 'Saved, but not in the controller: press Hardware Parameters Downloading.');
+    // 3 departments
+    const dn = cfg.depts.map(d => simple(d.name));
+    const dHave = ['clinical', 'front desk'].filter(n => dn.includes(n)).length;
+    add('depts', 5, dHave === 2 ? 5 : dHave * 2, 'Add both departments: Clinical and Front desk.');
+    // 4 people
+    const deptName = id => { const d = cfg.depts.find(x => x.id === id); return d ? simple(d.name) : ''; };
+    const findP = s => cfg.persons.find(p => simple(p.name) === simple(s.name));
+    let pp = 0; const pMiss = [];
+    SCEN.forEach(s => { const p = findP(s); if (p && deptName(p.dept) === simple(s.dept)) pp += 3; else pMiss.push(s.name + (p ? ' (wrong department)' : '')); });
+    add('persons', 9, pp, 'Missing or wrong: ' + pMiss.join(', ') + '.');
+    // 5 cards
+    let cp = 0; const cMiss = [];
+    SCEN.forEach(s => {
+      const c = cfg.cards.find(x => x.no === s.card), p = c && cfg.persons.find(x => x.id === c.person);
+      if (c && c.status === 'normal' && p && simple(p.name) === simple(s.name)) cp += 4;
+      else cMiss.push(s.card + (!c ? ' (not added)' : c.status === 'blank' ? ' (blank, not issued)' : c.status === 'lost' ? ' (reported lost)' : ' (issued to the wrong person)'));
+    });
+    add('cards', 12, cp, 'Check card ' + cMiss.join(', ') + '.');
+    // 6 week plan
+    const custom = cfg.weekPlans.filter(w => !w.fixed);
+    const good = custom.find(w => sameWeek(w.days, OFFICE));
+    let wp = 0, wtip = 'Add a week plan named Office hours.';
+    if (good) { wp = 10 + (simple(good.name) === 'office hours' ? 2 : 0); wtip = 'The hours are right; name the week plan Office hours.'; }
+    else if (custom.length) {
+      let best = 0, bestW = custom[0];
+      custom.forEach(w => { const n = w.days.filter((d, i) => JSON.stringify(norm(d)) === JSON.stringify(OFFICE[i])).length; if (n > best) { best = n; bestW = w; } });
+      wp = Math.floor(best / 7 * 9);
+      const bad = bestW.days.findIndex((d, i) => JSON.stringify(norm(d)) !== JSON.stringify(OFFICE[i]));
+      wtip = DAYS[bad] + ' in ' + bestW.name + ' should be ' + spansText(OFFICE[bad]) + ' (it shows ' + spansText(norm(bestW.days[bad])) + ').';
+    }
+    add('week', 12, wp, wtip);
+    // 7 template
+    const tGood = cfg.templates.find(t => !t.fixed && good && t.week === good.id);
+    add('tpl', 5, tGood ? (simple(tGood.name) === 'office hours' ? 5 : 4) : 0, tGood ? 'Name the template Office hours.' : 'Add a template that uses the Office hours week plan.');
+    // 8 permissions
+    const target = dev || cfg.devices[0];
+    const comp = target ? compile(cfg, target.id) : {cards: {}};
+    let pm = 0; const pmMiss = [];
+    SCEN.forEach((s, i) => { const c = comp.cards[s.card]; if (c && c.rights.some(r => sameWeek(r.week, OFFICE))) pm += i === 2 ? 4 : 3; else pmMiss.push(s.name); });
+    add('perm', 10, pm, 'No Office hours permission on the staff entrance yet for: ' + pmMiss.join(', ') + '.');
+    // 9 download
+    let dl = 0, dtip = 'Press Start Downloading in the Permission tab.';
+    if (dev && ctrl.perm) {
+      if (JSON.stringify(ctrl.perm) === JSON.stringify(compile(cfg, dev.id)) && pm > 0) dl = 5;
+      else { dl = 2; dtip = 'You changed something after the last download. Download again.'; }
+    }
+    add('dl', 5, dl, dtip);
+    // 10 to 14 tests
+    const scenCards = SCEN.map(s => s.card);
+    add('t_ok', 5, log.some(l => l.code === 'granted' && scenCards.includes(l.no)) ? 5 : 0, 'Present a card inside office hours after the download.');
+    add('t_sched', 5, log.some(l => l.code === 'schedule') ? 5 : 0, 'Present a card outside office hours, for example Saturday 14:00.');
+    add('t_nodl', 4, log.some(l => l.code === 'not_downloaded') ? 4 : 0, 'Present a card while the controller is missing a permission. If you already downloaded: delete the permission, download, add it again, and test before you download.');
+    add('t_ac', 3, fl.remoteOpen ? 3 : 0, 'Status monitor: press Open door once.');
+    const fixed = ctrl.door.mag === 'closed' && ctrl.doorDl;
+    add('t_fault', 3, fl.magFault ? (fixed ? 3 : 1) : 0, fl.magFault ? 'Now set Door Magnetic back to Remain Closed, press Edit, and download it.' : 'Set Door Magnetic to Remain Open, download it, and wait for the Door open timeout event.');
+    return {total: items.reduce((a, b) => a + b.pts, 0), items: items};
+  }
+
+  return {LAB, TYPES, DOOR_DEFAULTS, DAYS, OFFICE, SCEN, toMin, hhmm, norm, addSpan, removeSpan, inSpans, spansText, weekday, simple, validIP,
+    sameWeek, connect, onlineDev, fresh, compile, ctrlDecide, decide, perceivedOpen, perceivedPressed, doorOK, score};
+})();
+// LOGIC END
+
+// ---- colors (same meaning everywhere on the page; the HUD legend names them) ----
+const GOLD = '#E0B840', SKY = '#38B0E0', GREEN = '#6FD49B', CORAL = '#F0786A', ICE = '#9FE7FF', PERI = '#A9B4FF', IDLE = '#38B0E0';
+const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---- geometry shared by the 3D board and the flat 2D board (x right, z toward the viewer) ----
+const COMP = {
+  pc: {x: -5.7, z: -2.8, w: 2.6, d: 1.6, nm: 'LAB PC'},
+  ctrl: {x: -0.8, z: -0.4, w: 3.0, d: 2.2, nm: 'DS-K2601'},
+  relay: {x: 2.2, z: -0.4, w: 1.3, d: 1.0, nm: 'RELAY 1', cell: true},
+  psu: {x: 2.2, z: 1.5, w: 1.4, d: 1.0, nm: '12 VDC'},
+  reader: {x: -4.8, z: 2.4, w: 1.2, d: 1.6, nm: 'READER IN_1'},
+  exit: {x: 4.6, z: 2.7, w: 1.0, d: 0.8, nm: 'EXIT', cell: true, noPins: true},
+  strike: {x: 7.7, z: -3.0, w: 0.7, d: 0.6, nm: 'STRIKE', cell: true, noPins: true},
+  contact: {x: 7.7, z: -1.6, w: 0.7, d: 0.6, nm: 'CONTACT', cell: true, noPins: true},
+  door: {x: 5.4, z: -3.65, w: 3.2, d: 0.5, h: 0.1, nm: 'DOOR', noPins: true}
+};
+const TR = {
+  net: [{x: -4.4, z: -2.8}, {x: -1.4, z: -2.8}, {x: -1.4, z: -1.5}],
+  wieg: [{x: -4.8, z: 1.6}, {x: -4.8, z: 0.2}, {x: -2.3, z: 0.2}],
+  relay: [{x: 0.7, z: -0.4}, {x: 1.55, z: -0.4}],
+  strike: [{x: 2.85, z: -0.4}, {x: 8.2, z: -0.4}, {x: 8.2, z: -3.0}, {x: 8.05, z: -3.0}],
+  psu: [{x: 2.2, z: 1.0}, {x: 2.2, z: 0.1}],
+  contact: [{x: 7.35, z: -1.6}, {x: 7.0, z: -1.6}, {x: 7.0, z: -1.2}, {x: 0.7, z: -1.2}],
+  exit: [{x: 4.1, z: 2.7}, {x: 0.0, z: 2.7}, {x: 0.0, z: 0.7}]
+};
+const CC = k => ({x: COMP[k].x, z: COMP[k].z});
+const PATHS = {
+  card: [{x: -7.9, z: 4.6}, {x: -4.8, z: 2.4}],
+  wieg: [CC('reader'), ...TR.wieg, CC('ctrl')],
+  net: [CC('pc'), ...TR.net, CC('ctrl')],
+  relay: [CC('ctrl'), ...TR.relay, CC('relay')],
+  strike: [CC('relay'), ...TR.strike, CC('strike')],
+  contact: [CC('contact'), ...TR.contact, CC('ctrl')],
+  exit: [CC('exit'), ...TR.exit, CC('ctrl')]
+};
+const FOCUS = {read: [-4.6, 1.6], decide: [-0.8, -0.4], act: [4.6, -1.8], log: [-3.2, -1.8]};
+const INFO = {
+  pc: '<b>Lab PC, 192.168.10.10.</b> It runs iVMS-4200, the client software. The software stores the setup and sends it to the controller over the network on port 8000. The controller does not need the PC to decide; the PC programs it and collects its events.',
+  ctrl: '<b>DS-K2601 single-door controller, 192.168.10.64.</b> It keeps its own copy of the cards, permissions, and schedules, reads the reader on the Wiegand terminals, and drives relay 1 for the lock. It keeps working if the network or the PC goes down.',
+  relay: '<b>Lock relay 1</b>, a dry contact (COM1, NO1, NC1). For the electric strike, 12 V passes from COM1 to NO1 while the relay is on. Door Locked Time sets how long it stays on after a valid card.',
+  psu: '<b>12 VDC power supply.</b> It powers the controller and the reader, and, through relay 1, the electric strike.',
+  reader: '<b>Reader In_1</b>, a Wiegand reader with keypad. It reads the card and sends facility code 18 and the card number on W0 and W1. The controller answers on the OK line (green LED) or the ERR line (red LED), and BZ sounds the beeper.',
+  exit: '<b>Exit button</b> inside the door, normally open, wired to EXIT1 and GND. Exit Button Type Remain Open matches it. Pressing it asks the controller to release the strike for someone leaving.',
+  strike: '<b>Electric strike, fail secure:</b> locked without power, released with 12 V. If the power fails, the door stays locked from outside, and people inside still leave with the lever.',
+  contact: '<b>Door contact</b> (a magnetic switch) on the frame, wired to D-CONT1 and GND. It is closed when the door is closed, which matches Door Magnetic Remain Closed. The tag shows what the controller believes, in coral when that is wrong.',
+  door: '<b>Staff entrance</b>, the steel rear door. The label above it shows the real door: open or closed, locked or released. Compare it with tab 7, Status, which shows what the controller reports.'
+};
+
+function Graphics3D(stage) {
+  const lab = Lab3D(stage, {board: {w: 17, d: 10.4, cx: 0, cz: 0, silk: 'CBT TECHNOLOGY INSTITUTE  LSN-ACCESS  STAFF ENTRANCE TRAINER', seed: 21},
+    views: {overview: {pos: [0, 12.5, 11], tgt: [0, 0.4, 0], want: 1.5}, door: {pos: [10.5, 5.5, 3.2], tgt: [5.4, 1.5, -2.6], want: 1.1}}});
+  if (!lab) return null;
+  const T = lab.T, scene = lab.scene;
+  const M = {net: lab.busMat(SKY), wieg: lab.busMat(GOLD), relay: lab.busMat(GREEN), strike: lab.busMat(GREEN), psu: lab.busMat(CORAL), contact: lab.busMat(ICE), exit: lab.busMat(PERI)};
+  lab.trace(TR.net, 4, M.net); lab.trace(TR.wieg, 5, M.wieg); lab.trace(TR.relay, 2, M.relay); lab.trace(TR.strike, 2, M.strike);
+  lab.trace(TR.psu, 2, M.psu); lab.trace(TR.contact, 2, M.contact); lab.trace(TR.exit, 2, M.exit);
+  Object.keys(COMP).forEach(k => lab.chip(k, COMP[k]));
+  lab.finishPins();
+  lab.zone('Wiegand: W0 W1 OK ERR BZ', -3.5, 0.62, GOLD);
+  lab.zone('TCP/IP, port 8000', -2.9, -3.25, SKY);
+  lab.zone('NO1 to strike, 12 V', 5.0, -0.02, GREEN);
+  lab.zone('outside', -6.9, 3.9, GOLD);
+  lab.zone('inside', 6.2, 3.7, PERI);
+  const R = lab.recs;
+  R.door.el._obj.visible = false;
+  const box = (w, h, d, mat, x, y, z, parent) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; (parent || scene).add(m); return m; };
+  const frameM = new T.MeshStandardMaterial({color: 0x3a4270, roughness: .5, metalness: .45});
+  const steel = new T.MeshStandardMaterial({color: 0x737b9e, roughness: .42, metalness: .55});
+  const silver = new T.MeshStandardMaterial({color: 0xd4d8e4, roughness: .25, metalness: .9});
+  box(0.16, 3.5, 0.24, frameM, 3.86, 1.75, -3.65); box(0.16, 3.5, 0.24, frameM, 6.94, 1.75, -3.65); box(3.24, 0.16, 0.24, frameM, 5.4, 3.5, -3.65);
+  const pivot = new T.Group(); pivot.position.set(3.98, 0, -3.65); scene.add(pivot);
+  box(2.84, 3.1, 0.1, steel, 1.45, 1.78, 0, pivot);
+  box(0.36, 0.06, 0.07, silver, 2.55, 1.62, 0.1, pivot); box(0.36, 0.06, 0.07, silver, 2.55, 1.62, -0.1, pivot);
+  const strikeM = new T.MeshStandardMaterial({color: 0xb89a3a, roughness: .35, metalness: .8, emissive: new T.Color(GREEN), emissiveIntensity: 0});
+  box(0.07, 0.44, 0.16, strikeM, 6.84, 1.62, -3.65);
+  const contactM = new T.MeshStandardMaterial({color: 0xdfe3ee, roughness: .5, emissive: new T.Color(ICE), emissiveIntensity: 0});
+  box(0.3, 0.07, 0.12, contactM, 6.45, 3.385, -3.65); box(0.3, 0.05, 0.1, contactM, 2.47, 3.36, 0, pivot);
+  const ledM = new T.MeshStandardMaterial({color: 0x10163f, emissive: new T.Color(IDLE), emissiveIntensity: .9});
+  const led = new T.Mesh(new T.SphereGeometry(0.12, 16, 12), ledM); led.position.set(-4.8, 0.44, 1.86); scene.add(led);
+  const keyM = new T.MeshStandardMaterial({color: 0x2a3168, roughness: .6});
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) box(0.24, 0.05, 0.15, keyM, -5.1 + c * 0.3, 0.4, 2.3 + r * 0.22);
+  const screenM = new T.MeshStandardMaterial({color: 0x0b0f2b, emissive: new T.Color(SKY), emissiveIntensity: .35, roughness: .3});
+  box(1.7, 1.0, 0.06, screenM, -5.7, 0.95, -3.35); box(0.12, 0.5, 0.08, frameM, -5.7, 0.4, -3.3);
+  const doorLbl = lab.label('<span class="nm">STAFF ENTRANCE</span><span class="vl">CLOSED</span><span class="sb">locked</span>', 'tag', 5.4, 4.05, -3.65);
+  lab.onPick(k => api.onPick && api.onPick(k));
+  lab.intro();
+  let lastPhys = false, V0 = null;
+  function glow(rec, color, on) { gsap.killTweensOf(rec.mat); rec.mat.emissive.set(color).convertSRGBToLinear(); rec.mat.emissiveIntensity = on ? (rec.cell ? 0.45 : 0.36) : 0; rec.el.classList.toggle('on', !!on); }
+  function apply(V) {
+    if (!V) return;
+    glow(R.relay, GREEN, V.relay); glow(R.strike, GREEN, V.relay);
+    strikeM.emissiveIntensity = V.relay ? 1.2 : 0;
+    contactM.emissiveIntensity = V.phys ? 0 : 0.5;
+    if (V.pOpen !== V.phys) glow(R.contact, CORAL, true); else glow(R.contact, ICE, false);
+    if (V.alarm) glow(R.door, CORAL, true); else glow(R.door, GREEN, false);
+  }
+  const api = {
+    fly: (name, text, color, rev) => { const p = PATHS[name].slice(); if (rev) p.reverse(); return lab.fly(p, text, color, name === 'card' ? {y: 1.3, dur: 0.9} : undefined); },
+    hi: (k, c) => lab.hi(R[k], c), clear: () => { lab.clear(); setTimeout(() => apply(V0), 520); }, clearPackets: () => lab.clearPackets(), pop: k => lab.pop(R[k]),
+    bus: n => lab.glowBus(M[n]), focus: (x, z) => lab.focusOn(x, z, 8), view: n => lab.setView(n),
+    led: c => { ledM.emissive.set(c).convertSRGBToLinear(); ledM.emissiveIntensity = c === IDLE ? 0.9 : 2.2; },
+    refresh: () => apply(V0),
+    update(V) {
+      V0 = V;
+      R.pc.val.textContent = 'iVMS-4200'; R.pc.sub.textContent = '192.168.10.10';
+      R.ctrl.val.textContent = V.word; R.ctrl.val.style.color = V.wordColor || '';
+      R.ctrl.sub.textContent = '192.168.10.64 · ' + (V.online ? 'online' : 'not connected');
+      R.relay.val.textContent = V.relay ? 'ON' : 'OFF';
+      R.strike.val.textContent = V.relay ? 'RELEASED' : 'LOCKED';
+      R.contact.val.textContent = V.pOpen ? 'OPEN' : 'CLOSED'; R.contact.sub.textContent = 'as read';
+      R.contact.val.style.color = V.pOpen !== V.phys ? CORAL : '';
+      R.exit.val.textContent = V.exitHeld ? 'HELD' : 'READY';
+      R.psu.val.textContent = '12.0 V'; R.reader.val.textContent = V.reader || 'READY';
+      doorLbl.querySelector('.vl').textContent = V.phys ? 'OPEN' : 'CLOSED';
+      doorLbl.querySelector('.sb').textContent = (V.relay ? 'strike released' : 'locked') + (V.alarm ? ' · alarm' : '');
+      doorLbl.querySelector('.vl').style.color = V.alarm ? CORAL : '';
+      if (V.phys !== lastPhys) { lastPhys = V.phys; gsap.to(pivot.rotation, {y: V.phys ? -1.15 : 0, duration: RM ? 0 : 0.9, ease: 'power2.inOut', overwrite: 'auto'}); }
+      apply(V);
+    },
+    onPick: null
+  };
+  return api;
+}
+
+function Graphics2D(stage) {
+  const NS = 'http://www.w3.org/2000/svg', K = 40, X = x => (x + 8.5) * K, Y = z => (z + 5.2) * K;
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 680 416'); svg.setAttribute('class', 'flat'); svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Flat view of the lab bench: lab PC, controller, relay, power supply, reader, exit button, strike, door contact, and the staff entrance door');
+  stage.appendChild(svg);
+  const el = (t, a, p) => { const e = document.createElementNS(NS, t); Object.keys(a).forEach(k => e.setAttribute(k, a[k])); (p || svg).appendChild(e); return e; };
+  const txt = (s, a, p) => { const e = el('text', Object.assign({'text-anchor': 'middle', fill: '#aeb3c9', 'font-size': 11}, a), p); e.textContent = s; return e; };
+  el('rect', {x: 4, y: 4, width: 672, height: 408, rx: 12, fill: '#1a2257', stroke: '#3a4690'});
+  const COL = {net: SKY, wieg: GOLD, relay: GREEN, strike: GREEN, psu: CORAL, contact: ICE, exit: PERI};
+  const lines = {};
+  Object.keys(TR).forEach(k => { lines[k] = el('polyline', {points: TR[k].map(p => X(p.x) + ',' + Y(p.z)).join(' '), fill: 'none', stroke: COL[k], 'stroke-width': 5, 'stroke-opacity': .45, 'stroke-linejoin': 'round', 'stroke-linecap': 'round'}); });
+  txt('OUTSIDE', {x: X(-6.9), y: Y(4.2), fill: GOLD, 'font-size': 11, 'letter-spacing': 2});
+  txt('INSIDE', {x: X(6.2), y: Y(3.9), fill: PERI, 'font-size': 11, 'letter-spacing': 2});
+  txt('Wiegand', {x: X(-3.5), y: Y(0.65), fill: GOLD, 'font-size': 10});
+  txt('TCP/IP 8000', {x: X(-2.9), y: Y(-3.15), fill: SKY, 'font-size': 10});
+  // door from above: wall stubs, posts, and the leaf that swings toward the viewer
+  el('line', {x1: X(3.0), y1: Y(-3.65), x2: X(3.8), y2: Y(-3.65), stroke: '#3a4270', 'stroke-width': 8});
+  el('line', {x1: X(7.0), y1: Y(-3.65), x2: X(7.3), y2: Y(-3.65), stroke: '#3a4270', 'stroke-width': 8});
+  el('path', {d: 'M' + X(6.82) + ' ' + Y(-3.65) + ' A ' + (2.84 * K) + ' ' + (2.84 * K) + ' 0 0 1 ' + (X(3.98) + 2.84 * K * Math.cos(1.15)) + ' ' + (Y(-3.65) + 2.84 * K * Math.sin(1.15)), fill: 'none', stroke: '#4a5490', 'stroke-dasharray': '4 4'});
+  const leafG = el('g', {transform: 'translate(' + X(3.98) + ',' + Y(-3.65) + ') rotate(0)'});
+  const leaf = el('line', {x1: 0, y1: 0, x2: 2.84 * K, y2: 0, stroke: '#8a93b8', 'stroke-width': 7, 'stroke-linecap': 'round'}, leafG);
+  const strikeMark = el('rect', {x: X(6.9) - 5, y: Y(-3.65) - 9, width: 10, height: 18, rx: 2, fill: '#b89a3a'});
+  txt('STAFF ENTRANCE', {x: X(5.4), y: Y(-4.6), fill: '#eef1fa', 'font-size': 11, 'letter-spacing': 1.5});
+  const doorTxt = txt('CLOSED, locked', {x: X(5.4), y: Y(-4.2), fill: '#eef1fa', 'font-size': 12, 'font-weight': 700});
+  const parts = {};
+  Object.keys(COMP).forEach(k => {
+    const c = COMP[k];
+    const r = el('rect', {x: X(c.x - c.w / 2), y: Y(c.z - c.d / 2), width: c.w * K, height: c.d * K, rx: 5, fill: k === 'door' ? 'transparent' : '#161a2e', stroke: k === 'door' ? 'none' : '#4a5490', 'stroke-width': 1.5, style: 'cursor:pointer', tabindex: 0, role: 'button', 'aria-label': c.nm});
+    r.addEventListener('click', () => api.onPick && api.onPick(k));
+    r.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); api.onPick && api.onPick(k); } });
+    if (k === 'door') { parts[k] = {r: r, v: {textContent: ''}}; return; }
+    const small = c.w < 1.1;
+    txt(c.nm, {x: X(c.x), y: Y(c.z) - (small ? 3 : 8), 'font-size': small ? 8 : 10, 'pointer-events': 'none'});
+    parts[k] = {r: r, v: txt('', {x: X(c.x), y: Y(c.z) + (small ? 9 : 12), fill: '#eef1fa', 'font-size': small ? 9 : 13, 'font-weight': 700, 'pointer-events': 'none'})};
+  });
+  const ledC = el('circle', {cx: X(-4.8), cy: Y(1.86), r: 6, fill: IDLE});
+  let ang = 0, lastPhys = false;
+  const setAng = a => { ang = a; leafG.setAttribute('transform', 'translate(' + X(3.98) + ',' + Y(-3.65) + ') rotate(' + a + ')'); };
+  const api = {
+    fly(name, text, color, rev) {
+      if (!hasGSAP) return null;
+      const pts = PATHS[name].map(p => [X(p.x), Y(p.z)]); if (rev) pts.reverse();
+      const seg = []; let L = 0; for (let i = 1; i < pts.length; i++) { const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push(l); L += l; }
+      const g = el('g', {'class': 'pk'}); el('circle', {r: 7, fill: color}, g);
+      const t = el('text', {y: -11, 'text-anchor': 'middle', fill: color, 'font-size': 12, 'font-weight': 700}, g); t.textContent = text;
+      const at = d => { let i = 0; while (i < seg.length - 1 && d > seg[i]) { d -= seg[i]; i++; } const f = seg[i] ? Math.min(1, d / seg[i]) : 1; return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * f, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * f]; };
+      const o = {d: 0}; const place = () => { const p = at(o.d); g.setAttribute('transform', 'translate(' + p[0] + ',' + p[1] + ')'); }; place();
+      return gsap.timeline({onComplete: () => g.remove()}).to(o, {d: L, duration: Math.max(0.5, Math.min(2.0, L / 280)), ease: 'none', onUpdate: place});
+    },
+    hi(k, c) { if (k === 'door') return; parts[k].r.setAttribute('stroke', c); parts[k].r.setAttribute('stroke-width', 3); },
+    clear() { Object.keys(parts).forEach(k => { if (k !== 'door') { parts[k].r.setAttribute('stroke', '#4a5490'); parts[k].r.setAttribute('stroke-width', 1.5); } }); api.refresh(); },
+    clearPackets() { svg.querySelectorAll('g.pk').forEach(g => g.remove()); }, pop() {}, bus() {}, focus() {}, view() {},
+    led(c) { ledC.setAttribute('fill', c); },
+    refresh() {},
+    update(V) {
+      parts.pc.v.textContent = 'iVMS-4200'; parts.ctrl.v.textContent = V.word; parts.ctrl.v.setAttribute('fill', V.wordColor || '#eef1fa');
+      parts.relay.v.textContent = V.relay ? 'ON' : 'OFF'; parts.relay.r.setAttribute('fill', V.relay ? '#1f4a3a' : '#161a2e');
+      parts.strike.v.textContent = V.relay ? 'OPEN' : 'LOCK'; parts.strike.r.setAttribute('fill', V.relay ? '#1f4a3a' : '#161a2e');
+      strikeMark.setAttribute('fill', V.relay ? GREEN : '#b89a3a');
+      parts.contact.v.textContent = V.pOpen ? 'OPEN' : 'CLOSED'; parts.contact.v.setAttribute('fill', V.pOpen !== V.phys ? CORAL : '#eef1fa');
+      parts.exit.v.textContent = V.exitHeld ? 'HELD' : 'READY'; parts.psu.v.textContent = '12.0 V'; parts.reader.v.textContent = V.reader || 'READY';
+      doorTxt.textContent = (V.phys ? 'OPEN' : 'CLOSED') + ', ' + (V.relay ? 'strike released' : 'locked') + (V.alarm ? ', alarm' : '');
+      doorTxt.setAttribute('fill', V.alarm ? CORAL : '#eef1fa');
+      leaf.setAttribute('stroke', V.alarm ? CORAL : '#8a93b8');
+      if (V.phys !== lastPhys) { lastPhys = V.phys; const to = V.phys ? 66 : 0; if (hasGSAP && !RM) { const o = {a: ang}; gsap.to(o, {a: to, duration: 0.8, ease: 'power2.inOut', onUpdate: () => setAng(o.a)}); } else setAng(to); }
+    },
+    onPick: null
+  };
+  return api;
+}
+
+// ---- state: the configuration in iVMS-4200 (cfg) and the controller's own memory (ctrl) ----
+const KEY = 'lsnaccess-ivms-programming-v1';
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.cfg && s.ctrl && Array.isArray(s.events)) return Object.assign(AC.fresh(), s); } catch (e) { /* storage blocked */ } return null; }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(ST)); } catch (e) { /* storage blocked */ } }
+let ST = load() || AC.fresh();
+const freshUI = () => ({tab: 'dev', devSel: null, devForm: null, doorDev: null, deptSel: 'root', deptForm: false, personSel: null, personForm: false,
+  cardTab: 'blank', cardSel: null, cardForm: false, cardMethod: 'one', issue: false, schTab: 'week', wpSel: 'wp-en', wpForm: false, wpDay: 0,
+  hgSel: null, hgForm: false, tpSel: 'tp-en', tpForm: false, permSel: null, permWiz: null, dl: false, dlResult: null});
+let UI = freshUI();
+const nid = p => p + (ST.cfg.seq++);
+const HW = {phys: false, relayLeft: 0, walk: null, hold: false, openFor: 0, alarm: false, pOpen: false, exitHeld: false};
+let CTRLWORD = 'READY', CTRLCOLOR = '', READERWORD = 'READY';
+
+// ---- small helpers ----
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const B = (act, label, o) => '<button type="button" class="b2' + (o && o.pri ? ' pri' : '') + '" data-act="' + act + '"' + (o && o.id != null ? ' data-id="' + esc(o.id) + '"' : '') + (o && o.dis ? ' disabled' : '') + '>' + label + '</button>';
+const F = (label, id, input) => '<label for="' + id + '">' + label + '</label>' + input;
+const inp = (id, v, type, extra) => '<input type="' + (type || 'text') + '" id="' + id + '" value="' + esc(v) + '"' + (extra || '') + '>';
+const sel = (id, opts, v, extra) => '<select id="' + id + '"' + (extra || '') + '>' + opts.map(o => { const a = Array.isArray(o) ? o : [o, o]; return '<option value="' + esc(a[0]) + '"' + (String(a[0]) === String(v) ? ' selected' : '') + '>' + esc(a[1]) + '</option>'; }).join('') + '</select>';
+const val = id => { const e = document.getElementById(id); return e ? e.value : ''; };
+const hint = t => '<p class="wohint">' + t + '</p>';
+const dlg = (title, body, foot) => '<div class="dlg"><div class="dh">' + title + '</div><div class="db">' + body + '</div><div class="df">' + foot + '</div></div>';
+const online = () => AC.onlineDev(ST.cfg);
+const doorName = dev => ((dev || online() || ST.cfg.devices[0] || {name: 'Controller'}).name) + '_Door1';
+const pad = n => String(n).padStart(2, '0');
+const clockStr = () => { const s = ST.clock.sec; return ST.clock.date + ' ' + pad(Math.floor(s / 3600)) + ':' + pad(Math.floor(s / 60) % 60) + ':' + pad(s % 60); };
+const HOLDERS = {'10045': 'Ana Pérez', '10046': 'Luis Romero', '10047': 'Marta Sosa', '10099': 'You'};
+const OUT = {
+  granted: {label: 'Granted', ev: 'Card swiped: access granted', cls: 'ok'},
+  no_perm: {label: 'Denied: no permission', ev: 'No permission for this door', cls: 'bad'},
+  schedule: {label: 'Denied: outside schedule', ev: 'Duration group error (outside schedule)', cls: 'bad'},
+  unrecognized: {label: 'Denied: unrecognized card', ev: 'Unrecognized card number', cls: 'bad'},
+  lost: {label: 'Denied: lost card', ev: 'Lost card swiped', cls: 'bad'},
+  expired: {label: 'Denied: card not valid on this date', ev: 'Card not in valid period', cls: 'bad'},
+  remain_closed: {label: 'Denied: door set to remain closed', ev: 'Access denied: door remain closed', cls: 'bad'},
+  not_downloaded: {label: 'Denied: permission not downloaded', ev: '', cls: 'bad'}
+};
+const LBL = {unrecognized: 'unrecognized card', no_perm: 'no permission', schedule: 'outside the schedule', lost: 'lost card', expired: 'card not valid on this date'};
+
+let sound = true, actx = null;
+function beep(kind) {
+  if (!sound) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const pat = kind === 'ok' ? [[0, 0.16]] : kind === 'alarm' ? [[0, 0.45], [0.6, 0.45]] : [[0, 0.08], [0.14, 0.08], [0.28, 0.08]];
+    pat.forEach(([at, dur]) => { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.value = kind === 'alarm' ? 1800 : 2700; g.gain.value = 0.035; o.connect(g); g.connect(actx.destination); const t0 = actx.currentTime + at; o.start(t0); o.stop(t0 + dur); });
+  } catch (e) { /* no audio */ }
+}
+function setPhase(p) {
+  document.querySelectorAll('.phases li').forEach(li => li.classList.toggle('on', li.dataset.p === p));
+  const li = document.querySelector('.phases li[data-p="' + p + '"]');
+  $('#phaseTag').textContent = li ? li.textContent : 'Ready';
+  $('#phaseTag').style.setProperty('--pc', li ? getComputedStyle(li).getPropertyValue('--c') : 'var(--silk-dim)');
+}
+function say(text, tag, color) {
+  $('#narration').textContent = text;
+  if (tag) { document.querySelectorAll('.phases li').forEach(li => li.classList.remove('on')); $('#phaseTag').textContent = tag; $('#phaseTag').style.setProperty('--pc', color || 'var(--cbt-sky)'); }
+}
+function anim(fn) { if (hasGSAP && G) { try { fn(); } catch (e) { console.error(e); } } }
+
+// ---- the controller and the door hardware, simulated second by second (one bench second = 0.5 s) ----
+function relayOn() { const m = ST.ctrl.mode; return m === 'remainOpen' || (m !== 'remainClosed' && (HW.relayLeft > 0 || HW.exitHeld)); }
+function evalInputs(silent) {
+  const p = AC.perceivedOpen(ST.ctrl.door.mag, HW.phys);
+  if (p !== HW.pOpen) {
+    HW.pOpen = p;
+    if (!silent) addEvent(p ? 'Door opened (door contact)' : 'Door closed (door contact)', {cls: 'info'});
+    if (!p) { HW.openFor = 0; HW.alarm = false; }
+  }
+  const held = AC.perceivedPressed(ST.ctrl.door.exitBtn, false);
+  if (held !== HW.exitHeld) { HW.exitHeld = held; if (held && !silent) addEvent('Exit button pressed', {cls: 'info', note: 'the controller reads the button as held down'}); }
+}
+function tick() {
+  ST.clock.sec = (ST.clock.sec + 1) % 86400;
+  if (HW.walk) {
+    const w = HW.walk; w.t++;
+    if (w.t === w.openAt && (relayOn() || w.inside)) HW.phys = true;
+    if (w.t >= w.closeAt) { if (!HW.hold) HW.phys = false; HW.walk = null; }
+  }
+  if (HW.relayLeft > 0) HW.relayLeft--;
+  evalInputs(false);
+  if (HW.pOpen && ST.ctrl.mode !== 'remainOpen') {
+    HW.openFor++;
+    if (HW.openFor === Math.max(1, +ST.ctrl.door.timeout)) {
+      HW.alarm = true;
+      const wrong = ST.ctrl.door.mag === 'open' && !HW.phys;
+      addEvent('Door open timeout', {cls: 'bad', note: wrong ? 'the door is really closed' : ''});
+      beep('alarm');
+      if (wrong && online()) { ST.flags.magFault = true; renderScore(); save(); }
+      if (!running && !tl) say(wrong ? 'Door open timeout alarm, and the door is closed. Door Magnetic is set to Remain Open, but the door contact is normally closed, so the controller reads the closed door as open and starts the ' + ST.ctrl.door.timeout + ' s timer. Fix: tab 2, set Door Magnetic to Remain Closed, press Edit, then Hardware Parameters Downloading.' : 'Door open timeout alarm: the door stayed open longer than the Door Open Timeout of ' + ST.ctrl.door.timeout + ' s. Close the door to clear it.', 'Alarm', 'var(--ctrl)');
+    }
+  }
+  sync();
+}
+let lastV = '';
+const curV = () => ({online: !!online(), relay: relayOn(), phys: HW.phys, pOpen: HW.pOpen, alarm: HW.alarm, mode: ST.ctrl.mode, exitHeld: HW.exitHeld, word: CTRLWORD, wordColor: CTRLCOLOR, reader: READERWORD});
+function visual(o) { if (G) G.update(Object.assign(curV(), o)); }
+function sync() {
+  const V = curV();
+  const k = JSON.stringify(V);
+  if (k !== lastV) {
+    lastV = k; G && G.update(V);
+    const hd = $('#hudDoor');
+    hd.innerHTML = 'Door: <b>' + (V.phys ? 'open' : 'closed') + ', ' + (V.relay ? 'strike released' : 'locked') + '</b>' + (V.mode === 'remainOpen' ? ' · remain open' : V.mode === 'remainClosed' ? ' · remain closed' : '') + (V.alarm ? ' · <b>alarm</b>' : '');
+    hd.classList.toggle('alarm', V.alarm);
+    refreshLive();
+  }
+}
+function ctrlStatus() {
+  if (!online()) return {t: 'Offline', bad: true};
+  const m = ST.ctrl.mode;
+  if (m === 'remainOpen') return {t: 'Remain open', bad: false};
+  if (m === 'remainClosed') return {t: HW.pOpen ? 'Remain closed, door reported open' : 'Remain closed', bad: HW.pOpen};
+  if (HW.pOpen) return {t: HW.alarm ? 'Open: door open timeout' : 'Open', bad: HW.alarm};
+  return {t: relayOn() ? 'Closed, strike released' : 'Closed, locked', bad: false};
+}
+function addEvent(type, o) {
+  const dev = online(); if (!dev) return false;
+  o = o || {}; ST.evSeq++;
+  ST.events.unshift({n: ST.evSeq, type: type, holder: o.holder || '', no: o.no || '', time: clockStr(), src: o.src || doorName(dev), dir: o.dir || '', cls: o.cls || 'info', note: o.note || ''});
+  if (ST.events.length > 150) ST.events.length = 150;
+  refreshLive(); save();
+  return true;
+}
+
+// ---- test sequences: steps are data {phase, text, anim, commit}; Step, Step back, and Replay work on them ----
+let SEQ = null, S = {step: 0}, hist = [], tl = null, running = false, timer = null, speed = 1, follow = true, G = null;
+const SPEEDS = [0.25, 0.5, 1, 2, 4];
+const steps = () => SEQ ? SEQ.steps : [];
+function render() {
+  const n = steps().length;
+  $('#hudStep').textContent = S.step;
+  $('#btnBack').disabled = !SEQ || !hist.length;
+  $('#btnStep').disabled = !SEQ || S.step >= n;
+  $('#btnRun').disabled = !SEQ;
+  $('#btnRun').textContent = running ? 'Pause' : (!SEQ || S.step >= n || S.step === 0 ? 'Replay test' : 'Play');
+}
+function commitStep(i) { if (!SEQ || SEQ.did[i]) return; SEQ.did[i] = true; const m = SEQ.steps[i]; if (m.commit) m.commit(SEQ); }
+function finish(i) {
+  tl = null; commitStep(i); S.step = i + 1; render();
+  if (S.step >= steps().length) { if (SEQ && SEQ.replay) { lastV = ''; sync(); } if (follow && hasGSAP) { const s0 = SEQ; setTimeout(() => { if (SEQ === s0 && !tl && G) G.view('overview'); }, 1400); } }
+  if (running) { if (S.step >= steps().length) stop(); else timer = setTimeout(() => stepFwd(), 350 / speed); }
+}
+function stepFwd(animated) {
+  if (tl) { tl.progress(1); return; }
+  if (!SEQ || S.step >= steps().length) return;
+  hist.push(S.step);
+  const i = S.step, m = SEQ.steps[i];
+  setPhase(m.phase); $('#narration').textContent = m.text(SEQ);
+  if (animated !== false && hasGSAP && G) {
+    if (follow && FOCUS[m.phase]) G.focus(FOCUS[m.phase][0], FOCUS[m.phase][1]);
+    tl = gsap.timeline({onComplete: () => finish(i)});
+    if (m.anim) m.anim(tl, SEQ);
+    if (tl.duration() < 0.3) tl.to({}, {duration: 0.6});
+    tl.timeScale(speed);
+  } else finish(i);
+}
+function back() {
+  stop(); if (tl) { tl.kill(); tl = null; }
+  if (!hist.length) return;
+  S.step = hist.pop(); G && (G.clearPackets(), G.clear());
+  const m = SEQ.steps[S.step]; setPhase(m.phase);
+  $('#narration').textContent = 'Stepped back. Press Step to watch this again: ' + m.text(SEQ);
+  render();
+}
+function run() {
+  if (!SEQ) return;
+  if (S.step >= steps().length) { S.step = 0; hist = []; SEQ.replay = true; G && (G.clearPackets(), G.clear()); }
+  running = true; render(); stepFwd();
+}
+function stop() { running = false; clearTimeout(timer); render(); }
+function startSeq(seq) {
+  if (SEQ) { if (tl) { tl.kill(); tl = null; } for (let i = 0; i < SEQ.steps.length; i++) commitStep(i); }
+  stop(); G && (G.clearPackets(), G.clear());
+  CTRLWORD = 'READY'; CTRLCOLOR = ''; READERWORD = 'READY'; G && G.led(IDLE);
+  SEQ = seq; S.step = 0; hist = [];
+  if (window.innerWidth < 861) { try { $('#stage').scrollIntoView({behavior: RM ? 'auto' : 'smooth', block: 'start'}); } catch (e) { /* old browser */ } }
+  running = true; render(); stepFwd();
+}
+
+function decideText(s) {
+  const d = s.d, no = s.no, dn = AC.DAYS[d.day], t = s.time, who = d.card ? d.card.person : '';
+  switch (d.code) {
+    case 'granted': return 'The controller looks up card ' + no + ' in its own memory: issued to ' + who + ', with a permission on this door and the template ' + d.tpl + '. ' + (d.holiday ? 'That date is a holiday in the template, so the holiday hours apply: ' : dn + ' allows ') + AC.spansText(d.spans) + ', and ' + t + ' is inside. Access granted.';
+    case 'schedule': return 'Card ' + no + ' belongs to ' + who + ' and has a permission on this door, but the template ' + d.tpl + ' allows ' + (d.spans && d.spans.length ? 'only ' + AC.spansText(d.spans) : 'no hours') + (d.holiday ? ' on this holiday' : ' on ' + dn) + '. ' + t + ' is outside, so access is denied. The event list calls this a duration group error.';
+    case 'no_perm': return 'The controller knows card ' + no + ' (' + who + '), but no permission gives that card this door. Check the Permission tab: maybe ' + who + "'s department or name was left out. Access denied.";
+    case 'unrecognized': return 'Card ' + no + " is not in the controller's memory at all, so the controller treats it as a stranger's card. Access denied: unrecognized card number.";
+    case 'lost': return 'Card ' + no + " is on the controller's lost card list. A lost card never opens a door, even though " + who + ' still has a permission. If the card turns up, use Cancel Card Loss and download again.';
+    case 'expired': return 'Card ' + no + ' is valid only from ' + d.card.act + ' to ' + d.card.exp + '. ' + s.date + ' is outside those dates, so access is denied.';
+    case 'remain_closed': return 'Card ' + no + ' would be allowed, but the door is set to Remain closed from the Status monitor, so the controller keeps the strike locked. Send Open door, Close door, or Remain open to end that state.';
+    case 'not_downloaded': return 'iVMS-4200 has a permission that would let card ' + no + ' in at this time, but the controller never received it. The controller decides with its own copy, which says: ' + LBL[d.base] + '. Fix: Permission tab, Start Downloading.';
+    default: return 'Check the date and the time on the test bench.';
+  }
+}
+function cardSeq(no, date, time) {
+  const d = AC.decide(ST.cfg, ST.ctrl, no, date, time);
+  const holder = HOLDERS[no] || 'Someone', first = holder === 'You' ? 'You' : holder.split(' ')[0];
+  const ok = d.code === 'granted', dn = AC.DAYS[d.day];
+  ST.clock = {date: date, sec: d.min * 60};
+  const evName = d.code === 'not_downloaded' ? OUT[d.base].ev : OUT[d.code].ev;
+  const seq = {kind: 'card', d: d, no: no, date: date, time: time, did: {}};
+  const lt = +ST.ctrl.door.lockTime, to = +ST.ctrl.door.timeout;
+  seq.steps = [
+    {phase: 'read', text: () => (holder === 'You' ? 'You hold' : holder + ' holds') + ' card ' + no + ' near Reader In_1 on ' + dn + ', ' + date + ', at ' + time + '. The reader picks up facility code 18 and card number ' + no + ' by radio.',
+      anim: t => { t.call(() => { G.clear(); G.hi('reader', GOLD); }); t.add(G.fly('card', 'card ' + no, GOLD)); }},
+    {phase: 'read', text: () => 'The reader sends 26 bits to the controller on the W0 and W1 wires (Wiegand). The reader decides nothing; it only passes the number along.',
+      anim: t => { t.call(() => G.bus('wieg')); t.add(G.fly('wieg', 'FC 18 · ' + no, GOLD)); }},
+    {phase: 'decide', text: decideText,
+      anim: t => { t.call(() => { G.hi('ctrl', ok ? GREEN : CORAL); G.pop('ctrl'); CTRLWORD = ok ? 'GRANTED' : 'DENIED'; CTRLCOLOR = ok ? GREEN : CORAL; sync(); }); t.to({}, {duration: 1.0}); },
+      commit: () => {
+        CTRLWORD = ok ? 'GRANTED' : 'DENIED'; CTRLCOLOR = ok ? GREEN : CORAL;
+        ST.log.push({code: d.code, no: no, date: date, time: time});
+        $('#lastRes').innerHTML = 'Last test: card ' + esc(no) + ', ' + esc(dn.slice(0, 3)) + ' ' + esc(time) + ': <b class="' + (ok ? 'ok' : 'bad') + '">' + esc(OUT[d.code].label) + '</b>';
+        renderScore(); save(); sync();
+      }},
+    ok ? {phase: 'act', text: () => ST.ctrl.mode === 'remainOpen' ? 'The controller turns on the OK line: the LED turns green and it beeps once. The door is already in Remain open, so the strike was released anyway.' : 'The controller turns on the OK line: the reader LED turns green and it beeps once. Relay 1 turns on for the Door Locked Time of ' + lt + ' s, so 12 V reaches the electric strike and it releases.',
+      anim: t => { t.call(() => { G.led(GREEN); G.hi('reader', GREEN); G.hi('relay', GREEN); }); t.add(G.fly('wieg', 'OK', GREEN, true)); t.add(G.fly('relay', 'relay on', GREEN), '<'); t.add(G.fly('strike', '12 V', GREEN)); t.call(() => { G.bus('strike'); G.hi('strike', GREEN); if (SEQ && SEQ.replay) visual({relay: true, reader: 'GRANTED'}); }); },
+      commit: () => { READERWORD = 'GRANTED'; G.led(GREEN); beep('ok'); if (ST.ctrl.mode !== 'remainOpen') HW.relayLeft = Math.max(HW.relayLeft, lt); HW.walk = {t: 0, openAt: 1, closeAt: 4, inside: false}; sync(); setTimeout(() => { READERWORD = 'READY'; G && G.led(IDLE); sync(); }, 2500); }}
+      : {phase: 'act', text: () => 'The controller turns on the ERR line: the reader LED turns red and it beeps three times. Relay 1 stays off, so the fail secure strike stays locked and the door does not open.' + (relayOn() ? ' (The strike is released anyway right now, because of ' + (ST.ctrl.mode === 'remainOpen' ? 'Remain open' : 'the exit button setting') + '.)' : ''),
+      anim: t => { t.call(() => { G.led(CORAL); G.hi('reader', CORAL); }); t.add(G.fly('wieg', 'ERR', CORAL, true)); },
+      commit: () => { READERWORD = 'DENIED'; G.led(CORAL); beep('bad'); sync(); setTimeout(() => { READERWORD = 'READY'; G && G.led(IDLE); sync(); }, 2500); }},
+    ok ? {phase: 'act', text: () => (first === 'You' ? 'You pull' : first + ' pulls') + ' the door open and walks in while the strike is released. ' + (ST.ctrl.door.mag === 'open' ? 'Door Magnetic is set to Remain Open, so the controller reads the contact backwards: it reports the open door as closed, and the closed door as open.' : 'The door contact opens, and the controller reports the door open. The door closes again after about 3 s, well inside the Door Open Timeout of ' + to + ' s, and the strike locks when the Door Locked Time ends.'),
+      anim: t => { t.call(() => { G.hi('door', GREEN); if (SEQ && SEQ.replay) visual({relay: true, phys: true}); }); t.to({}, {duration: 1.2}); t.add(G.fly('contact', ST.ctrl.door.mag === 'open' ? 'reads closed' : 'door open', ST.ctrl.door.mag === 'open' ? CORAL : ICE)); }} : null,
+    {phase: 'log', text: () => online() ? 'The controller sends the event to iVMS-4200 at 192.168.10.10 over port 8000. A new row appears in the Access event list: ' + evName + (d.code === 'not_downloaded' ? '. The software knows better, but the controller decided.' : '.') : 'iVMS-4200 is not connected to this controller (no device is Online), so the event stays in the controller and the event list does not show it.',
+      anim: t => { if (online()) t.add(G.fly('net', 'event', SKY, true)); else { t.call(() => G.hi('pc', CORAL)); t.to({}, {duration: 0.6}); } },
+      commit: () => { addEvent(evName, {holder: d.card ? d.card.person : '', no: no, dir: 'Enter', src: 'Reader In_1', cls: ok ? 'ok' : 'bad', note: d.code === 'not_downloaded' ? 'iVMS-4200 has a permission the controller never received' : ''}); }}
+  ].filter(Boolean);
+  return seq;
+}
+function exitSeq() {
+  const c = ST.ctrl, mode = c.mode, right = c.door.exitBtn === 'open', lt = +c.door.lockTime;
+  const opens = right && mode !== 'remainClosed';
+  const seq = {kind: 'exit', did: {}};
+  seq.steps = [
+    {phase: 'read', text: () => 'Someone inside presses the exit button. It is normally open, so pressing it closes the circuit between EXIT1 and GND for a moment.',
+      anim: t => { t.call(() => { G.clear(); G.hi('exit', PERI); }); t.add(G.fly('exit', 'EXIT1', PERI)); }},
+    {phase: 'decide', text: () => mode === 'remainClosed' ? 'The door is set to Remain closed, so the controller ignores the button.' : right ? 'Exit Button Type is Remain Open, which matches a normally open button, so the controller sees a press and treats it as a request to exit.' : 'Exit Button Type is set to Remain Closed, but the button is normally open. The controller already thought the button was held down, so this press looks like a release: nothing new happens.',
+      anim: t => { t.call(() => { G.hi('ctrl', opens ? GREEN : CORAL); G.pop('ctrl'); }); t.to({}, {duration: 0.8}); }},
+    {phase: 'act', text: () => opens ? 'Relay 1 turns on for the Door Locked Time of ' + lt + ' s and the strike releases. The person pushes the door open and walks out; the door closes behind them.' : 'The strike does not release from the button. The person still leaves: the lever on the inside always opens a fail secure strike (free egress).',
+      anim: t => { if (opens) { t.call(() => G.hi('relay', GREEN)); t.add(G.fly('relay', 'relay on', GREEN)); t.add(G.fly('strike', '12 V', GREEN)); } else t.to({}, {duration: 0.6}); },
+      commit: () => { if (opens) HW.relayLeft = Math.max(HW.relayLeft, lt); HW.walk = {t: 0, openAt: 1, closeAt: 4, inside: true}; sync(); }},
+    {phase: 'log', text: () => opens ? (online() ? 'The controller logs Exit button pressed and sends it to iVMS-4200. Then the door contact reports the door opening and closing.' : 'The controller logs the press, but iVMS-4200 is not connected, so the list does not show it.') : 'No exit event this time. That missing event is a clue when you troubleshoot an exit button.',
+      anim: t => { if (opens && online()) t.add(G.fly('net', 'event', SKY, true)); },
+      commit: () => { if (opens) addEvent('Exit button pressed', {src: doorName(), cls: 'info', dir: 'Exit'}); }}
+  ];
+  return seq;
+}
+
+// ---- the simulated iVMS-4200 window ----
+const ICON = {
+  dev: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8" cy="12" r="1.6"/><path d="M12 10h6M12 14h6"/>',
+  door: '<path d="M6 21V3h12v18M3 21h18"/><circle cx="15" cy="12" r="1"/>',
+  person: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4-7 8-7s7 2.5 8 7"/>',
+  card: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h4"/>',
+  sched: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h3"/>',
+  perm: '<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M21 12v3"/>',
+  status: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M7 12l3-3 2 2 4-4"/>',
+  ev: '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>'
+};
+const TABS = [
+  {id: 'dev', label: 'Controller', ids: ['ctrl']}, {id: 'door', label: 'Door', ids: ['door']}, {id: 'person', label: 'Person', ids: ['depts', 'persons']},
+  {id: 'card', label: 'Card', ids: ['cards']}, {id: 'sched', label: 'Schedule', ids: ['week', 'tpl']}, {id: 'perm', label: 'Permission', ids: ['perm', 'dl']},
+  {id: 'status', label: 'Status', ids: ['t_ac']}, {id: 'ev', label: 'Events', ids: []}
+];
+const TAB_TEXT = {
+  dev: 'Step 1, controller management. iVMS-4200 has to reach the controller on the network before it can send it anything. Type the address from the work order, port 8000 (the port the controller listens on), Dial-up 1, and the admin login. A wrong address leaves the controller Offline.',
+  door: 'Step 2, the door settings. They tell the controller how the door hardware is wired. The door contact is closed when the door is closed, so Door Magnetic is Remain Closed; the exit button is normally open, so Exit Button Type is Remain Open. Press Edit to save, then Hardware Parameters Downloading to copy the settings into the controller.',
+  person: 'Step 3, people. Departments group people, so one permission can cover a whole team. Add Clinical and Front desk under Default, then select a department and add each employee to it.',
+  card: 'Step 4, cards. A new card number goes into the Blank card list first. Issue Card links it to a person and moves it to the Normal card list. Report Card Loss moves it to the Lost card list, where it no longer opens doors.',
+  sched: 'Step 5, the schedule. A week plan holds the hours for each day. A holiday group holds special dates and wins over the week plan. A template puts a week plan and holiday groups together, and permissions use templates.',
+  perm: 'Step 6, permissions. A permission says who may open which door, during which template. Then Start Downloading copies everything into the controller. Until you download, the controller does not know about it.',
+  status: 'Step 7, status monitor. The door icon shows what the controller reports, which is not always the truth about the door. Anti-control buttons send a command: open once, close once, or keep the door open or closed until the next command.',
+  ev: 'Step 8, events. Every card, button, and door change becomes a row here, with the time, card number, and card holder. Use this list to prove each test on your lab sheet.'
+};
+function scoreNow() { return AC.score(ST); }
+function renderTabs() {
+  const sc = scoreNow(), full = id => { const it = sc.items.find(i => i.id === id); return it && it.pts === it.max; };
+  $('#winTabs').innerHTML = TABS.map((t, i) => '<button type="button" role="tab" id="tab-' + t.id + '" data-tab="' + t.id + '" aria-selected="' + (UI.tab === t.id) + '"><span class="n">' + (i + 1) + '</span>' +
+    (t.ids.length && t.ids.every(full) ? '<span class="ck" aria-label="done">✓</span>' : '') +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[t.id] + '</svg>' + t.label + '</button>').join('');
+  $('#winBody').setAttribute('aria-labelledby', 'tab-' + UI.tab);
+}
+function openTab(id) { UI.tab = id; renderTabs(); renderPane(); if (!running && !tl) say(TAB_TEXT[id], 'iVMS-4200, tab ' + (TABS.findIndex(t => t.id === id) + 1), 'var(--cbt-sky)'); }
+function renderPane() {
+  const f = {dev: paneDev, door: paneDoor, person: panePerson, card: paneCard, sched: paneSched, perm: panePerm, status: paneStatus, ev: paneEv}[UI.tab];
+  $('#winBody').innerHTML = f();
+  if (UI.tab === 'sched' && UI.schTab === 'week') paintGrid();
+  const c = $('#winConn'), dev = online();
+  c.innerHTML = 'PC 192.168.10.10 · ' + (dev ? '<b>' + esc(dev.name) + ' online</b>' : '<b class="off">no device online</b>');
+}
+function after() { renderTabs(); renderPane(); renderScore(); sync(); save(); }
+function refreshLive() {
+  const dev = online(), c = $('#winConn');
+  if (c) c.innerHTML = 'PC 192.168.10.10 · ' + (dev ? '<b>' + esc(dev.name) + ' online</b>' : '<b class="off">no device online</b>');
+  if (UI.tab === 'ev') $('#winBody').innerHTML = paneEv();
+  if (UI.tab === 'status') { const a = $('#stBox'), b = $('#stLive'); if (a) a.innerHTML = statusBox(); if (b) b.innerHTML = liveBox(); }
+}
+
+// tab 1: controller management
+const selDev = () => ST.cfg.devices.find(d => d.id === UI.devSel) || null;
+function paneDev() {
+  const c = ST.cfg;
+  let h = hint('Work order: name Staff entrance, type Access Controller_DS-K2601, TCP/IP, address 192.168.10.64, port 8000, Dial-up 1, user admin, password Hialeah2026 (simulator only; on the real controller use the password your instructor gives you).');
+  h += '<h3>Device management</h3><div class="tb">' + B('devAdd', '<span class="plus">+</span> Add Device') + B('devEdit', 'Edit', {dis: !selDev()}) + B('devDel', 'Delete', {dis: !selDev()}) + '</div>';
+  h += '<div class="tw"><table><thead><tr><th></th><th>Name</th><th>Address</th><th>Port</th><th>Status</th></tr></thead><tbody>';
+  if (!c.devices.length) h += '<tr><td colspan="5" class="empty">No devices yet. Press Add Device.</td></tr>';
+  c.devices.forEach(d => {
+    const k = AC.connect(d), on = UI.devSel === d.id;
+    h += '<tr class="pick' + (on ? ' sel' : '') + '" data-act="devPick" data-id="' + d.id + '"><td><input type="radio" name="devr"' + (on ? ' checked' : '') + ' aria-label="Select ' + esc(d.name) + '"></td><td>' + esc(d.name) + '</td><td>' + esc(d.addr) + '</td><td>' + esc(d.port) + '</td><td><span class="st ' + (k.online ? 'on' : 'off') + '">' + (k.online ? 'Online' : 'Offline') + '</span></td></tr>';
+    if (!k.online) h += '<tr class="why"><td></td><td colspan="4">' + esc(k.reason) + '</td></tr>';
+  });
+  h += '</tbody></table></div>';
+  if (UI.devForm) {
+    const d = UI.devForm === 'edit' && selDev() ? selDev() : {name: '', type: AC.LAB.type, conn: 'TCP/IP', addr: '', port: 8000, dialup: 1, user: '', pass: ''};
+    h += dlg(UI.devForm === 'edit' ? 'Edit access controller' : 'Add the access controller', '<div class="fgrid">' +
+      F('Name:', 'fName', inp('fName', d.name, 'text', ' autocomplete="off"')) + F('Type:', 'fType', sel('fType', AC.TYPES, d.type)) +
+      F('Connection Method:', 'fConn', sel('fConn', ['TCP/IP', 'COM port', 'Ehome'], d.conn)) +
+      F('Address:', 'fAddr', inp('fAddr', d.addr, 'text', ' inputmode="decimal" autocomplete="off" placeholder="0.0.0.0"')) +
+      F('Port:', 'fPort', inp('fPort', d.port, 'number', ' min="1" max="65535"')) + F('Baud Rate:', 'fBaud', sel('fBaud', [''], '', ' disabled')) +
+      F('Dial-up:', 'fDial', inp('fDial', d.dialup, 'number')) + F('Account:', 'fAcct', inp('fAcct', '', 'text', ' disabled')) +
+      F('User Name:', 'fUser', inp('fUser', d.user, 'text', ' autocomplete="off"')) + F('Password:', 'fPass', inp('fPass', d.pass, 'password', ' autocomplete="new-password"')) +
+      '</div><p class="err" id="devErr" role="alert"></p>', B('devSave', UI.devForm === 'edit' ? 'Edit' : 'Add', {pri: true}) + B('devCancel', 'Cancel'));
+  }
+  h += '<h3>Online device detection</h3><p class="say">Devices that answer on the lab network, 192.168.10.0/24:</p><div class="tw"><table><thead><tr><th>IP address</th><th>Port</th><th>Device type</th><th>Status</th></tr></thead><tbody><tr><td>192.168.10.64</td><td>8000</td><td>DS-K2601</td><td>Activated</td></tr></tbody></table></div>';
+  return h;
+}
+const ACT = {};
+ACT.devPick = el => { UI.devSel = el.dataset.id; renderPane(); };
+ACT.devAdd = () => { UI.devForm = 'add'; renderPane(); const f = $('#fName'); if (f) f.focus(); };
+ACT.devEdit = () => { if (selDev()) { UI.devForm = 'edit'; renderPane(); } };
+ACT.devCancel = () => { UI.devForm = null; renderPane(); };
+ACT.devDel = () => {
+  const d = selDev(); if (!d) return;
+  ST.cfg.devices = ST.cfg.devices.filter(x => x.id !== d.id);
+  const n = ST.cfg.perms.length; ST.cfg.perms = ST.cfg.perms.filter(p => p.dev !== d.id);
+  UI.devSel = null; UI.devForm = null;
+  say('Deleted ' + d.name + ' from iVMS-4200' + (n !== ST.cfg.perms.length ? ', together with its permissions' : '') + '. The controller itself keeps what it already has in memory: deleting a device in the software does not erase the controller.', 'Controller', 'var(--ctrl)');
+  after();
+};
+ACT.devSave = () => {
+  const d = {name: val('fName').trim(), type: val('fType'), conn: val('fConn'), addr: val('fAddr').trim(), port: parseInt(val('fPort'), 10), dialup: parseInt(val('fDial'), 10), user: val('fUser').trim(), pass: val('fPass')};
+  const err = m => { $('#devErr').textContent = m; };
+  if (!d.name) return err('Enter a device name.');
+  if (d.conn === 'TCP/IP' && !AC.validIP(d.addr)) return err('Enter a valid IPv4 address, four numbers from 0 to 255 separated by dots.');
+  if (!(d.port >= 1 && d.port <= 65535)) return err('The port must be a number from 1 to 65535.');
+  if (isNaN(d.dialup)) return err('Enter the Dial-up value.');
+  if (!d.user) return err('Enter the user name.');
+  if (!d.pass) return err('Enter the password.');
+  const before = online();
+  let dev;
+  if (UI.devForm === 'edit' && selDev()) { dev = selDev(); Object.assign(dev, d); }
+  else { dev = Object.assign({id: nid('d'), door: Object.assign({}, AC.DOOR_DEFAULTS)}, d); ST.cfg.devices.push(dev); UI.devSel = dev.id; }
+  UI.devForm = null;
+  const k = AC.connect(dev);
+  anim(() => { const t = gsap.timeline(); t.call(() => { G.clear(); G.hi('pc', SKY); G.bus('net'); }); t.add(G.fly('net', 'login :' + dev.port, SKY)); if (k.online) { t.call(() => G.hi('ctrl', GREEN)); t.add(G.fly('net', 'OK', GREEN, true)); } else t.call(() => G.hi('pc', CORAL)); t.to({}, {duration: 1.2}); t.call(() => G.clear()); });
+  if (k.online && !before) { evalInputs(true); addEvent('Remote login', {src: dev.name, cls: 'info'}); }
+  say(k.online ? 'iVMS-4200 logged in to the controller at ' + dev.addr + ' on port ' + dev.port + ' with the ' + dev.user + ' account. The status is Online, so the software can now send settings to the controller and receive its events. Next: tab 2, Door.'
+    : 'The controller did not accept the connection. ' + k.reason + ' The status stays Offline. Select the row, press Edit, fix the value, and press Edit in the form to try again.', 'Controller', k.online ? 'var(--ok)' : 'var(--ctrl)');
+  after();
+};
+
+// tab 2: Door_1 parameters
+const curDoorDev = () => ST.cfg.devices.find(d => d.id === UI.doorDev) || ST.cfg.devices[0];
+function paneDoor() {
+  const devs = ST.cfg.devices;
+  let h = hint('Work order: Door Magnetic Remain Closed, Exit Button Type Remain Open, Door Locked Time 5 s, Door Open for Disabled Person 15 s, Door Open Timeout 10 s.');
+  if (!devs.length) return h + '<p class="say">Add the controller in tab 1 first. The door belongs to the controller.</p>';
+  const d = curDoorDev(); UI.doorDev = d.id; const p = d.door, on = AC.connect(d).online;
+  if (devs.length > 1) h += '<div class="fgrid" style="margin-bottom:8px">' + F('Controller:', 'dDev', sel('dDev', devs.map(x => [x.id, x.name + ' (' + x.addr + ')']), d.id)) + '</div>';
+  h += '<h3>Edit access controller: ' + esc(d.name) + ' › Door_1</h3><p class="say">Readers on this door: Reader In_1, Reader Out_2.</p>';
+  h += '<div class="tw"><table><thead><tr><th>Items</th><th>Options or value</th></tr></thead><tbody>' +
+    '<tr><td><label for="dMag">Door Magnetic</label></td><td>' + sel('dMag', [['closed', 'Remain Closed'], ['open', 'Remain Open']], p.mag) + '</td></tr>' +
+    '<tr><td><label for="dExit">Exit Button Type</label></td><td>' + sel('dExit', [['open', 'Remain Open'], ['closed', 'Remain Closed']], p.exitBtn) + '</td></tr>' +
+    '<tr><td><label for="dLock">Door Locked Time (s)</label></td><td>' + inp('dLock', p.lockTime, 'number', ' min="1" max="255"') + '</td></tr>' +
+    '<tr><td><label for="dDis">Door Open for Disabled Person (s)</label></td><td>' + inp('dDis', p.disabled, 'number', ' min="1" max="255"') + '</td></tr>' +
+    '<tr><td><label for="dTo">Door Open Timeout (s)</label></td><td>' + inp('dTo', p.timeout, 'number', ' min="1" max="255"') + '</td></tr>' +
+    '</tbody></table></div><p class="err" id="doorErr" role="alert"></p>';
+  h += '<div class="tb">' + B('doorRestore', 'Restore Default Value') + B('doorSave', 'Edit', {pri: true}) + B('doorDl', 'Hardware Parameters Downloading') + '</div>';
+  const same = JSON.stringify(normDoor(p)) === JSON.stringify(normDoor(ST.ctrl.door));
+  h += !on ? '<p class="err">This device is Offline, so nothing can be downloaded to it.</p>' : (same && ST.ctrl.doorDl) ? '<p class="okmsg">The controller has these settings.</p>' : '<p class="warnmsg">Saved in iVMS-4200 only. The controller still uses its own values until you press Hardware Parameters Downloading.</p>';
+  return h;
+}
+const normDoor = p => ({mag: p.mag, exitBtn: p.exitBtn, lockTime: +p.lockTime, disabled: +p.disabled, timeout: +p.timeout});
+function readDoorForm() {
+  const n = id => parseInt(val(id), 10);
+  const p = {mag: val('dMag'), exitBtn: val('dExit'), lockTime: n('dLock'), disabled: n('dDis'), timeout: n('dTo')};
+  for (const k of ['lockTime', 'disabled', 'timeout']) if (!(p[k] >= 1 && p[k] <= 255)) return null;
+  return p;
+}
+ACT.doorRestore = () => { const D = AC.DOOR_DEFAULTS; $('#dMag').value = D.mag; $('#dExit').value = D.exitBtn; $('#dLock').value = D.lockTime; $('#dDis').value = D.disabled; $('#dTo').value = D.timeout; say('The form now shows the default values. They are not saved until you press Edit.', 'Door', 'var(--cbt-sky)'); };
+ACT.doorSave = () => {
+  const p = readDoorForm(); if (!p) { $('#doorErr').textContent = 'The times must be whole numbers of seconds from 1 to 255.'; return; }
+  curDoorDev().door = p;
+  say('Saved in iVMS-4200. The controller still uses its old values until you press Hardware Parameters Downloading.', 'Door', 'var(--cbt-sky)');
+  after();
+};
+ACT.doorDl = () => {
+  const d = curDoorDev(); if (!d) return;
+  if (!AC.connect(d).online) { say('Download failed: ' + d.name + ' is Offline. Fix the connection in tab 1 first.', 'Door', 'var(--ctrl)'); return; }
+  const form = readDoorForm(), unsaved = form && JSON.stringify(normDoor(form)) !== JSON.stringify(normDoor(d.door));
+  ST.ctrl.door = normDoor(d.door); ST.ctrl.doorDl = true;
+  if (ST.ctrl.door.exitBtn === 'open') HW.exitHeld = false;
+  anim(() => { const t = gsap.timeline(); t.call(() => { G.clear(); G.hi('ctrl', SKY); }); t.add(G.fly('net', 'Door_1 settings', SKY)); t.to({}, {duration: 1}); t.call(() => G.clear()); });
+  evalInputs(false);
+  const p = ST.ctrl.door, notes = [];
+  if (p.mag === 'open') notes.push('Door Magnetic is Remain Open, but the door contact is normally closed, so the controller now reads the closed door as open. Watch tab 7, Status: the door shows open, and after the Door Open Timeout (' + p.timeout + ' s) a Door open timeout event appears.');
+  if (p.exitBtn === 'closed') notes.push('Exit Button Type is Remain Closed, but the exit button is normally open, so the controller now thinks somebody is holding it down. It keeps relay 1 on: the door never locks.');
+  if (+p.lockTime !== 5 || +p.timeout !== 10 || +p.disabled !== 15) notes.push('Some times differ from the work order (5 s, 15 s, 10 s).');
+  say((unsaved ? 'Careful: you changed the form but did not press Edit, so the controller received the saved values. ' : '') + (notes.length ? 'Downloaded. ' + notes.join(' ') : 'Downloaded. The controller now uses Door Magnetic Remain Closed and Exit Button Type Remain Open, which match the wiring from Lab 1: a normally closed door contact and a normally open exit button. Next: tab 3, Person.'), 'Door', notes.length ? 'var(--ctrl)' : 'var(--ok)');
+  after();
+};
+
+// tab 3: departments and people
+const deptOf = id => ST.cfg.depts.find(d => d.id === id);
+const subDepts = id => { const out = [id]; ST.cfg.depts.forEach(d => { if (d.parent === id) out.push(...subDepts(d.id)); }); return out; };
+function deptTree(id, depth) {
+  const d = deptOf(id); if (!d) return '';
+  let h = '<button type="button" class="' + (UI.deptSel === id ? 'sel' : '') + '" data-act="deptPick" data-id="' + id + '" style="padding-left:' + (6 + depth * 16) + 'px">' + (depth ? '' : '▾ ') + esc(d.name) + '</button>';
+  ST.cfg.depts.filter(x => x.parent === id).forEach(x => { h += deptTree(x.id, depth + 1); });
+  return h;
+}
+function panePerson() {
+  const c = ST.cfg;
+  let h = hint('Work order: departments Clinical and Front desk. Ana Pérez (Front desk), Luis Romero (Clinical), Marta Sosa (Front desk).');
+  const inSel = subDepts(UI.deptSel);
+  const people = c.persons.filter(p => inSel.includes(p.dept));
+  h += '<div class="split"><div><h3>Departments</h3><div class="tb">' + B('deptAdd', '<span class="plus">+</span> Add Department') + B('deptDel', 'Delete', {dis: UI.deptSel === 'root'}) + '</div><div class="tree" aria-label="Departments">' + deptTree('root', 0) + '</div></div>';
+  h += '<div><h3>Person list: ' + esc(deptOf(UI.deptSel) ? deptOf(UI.deptSel).name : '') + '</h3><div class="tb">' + B('personAdd', '<span class="plus">+</span> Add Person') + B('personDel', 'Delete', {dis: !people.some(p => p.id === UI.personSel)}) + '</div>';
+  h += '<div class="tw"><table><thead><tr><th></th><th>Name</th><th>Gender</th><th>Department</th></tr></thead><tbody>';
+  if (!people.length) h += '<tr><td colspan="4" class="empty">Nobody here yet.</td></tr>';
+  people.forEach(p => { const on = UI.personSel === p.id; h += '<tr class="pick' + (on ? ' sel' : '') + '" data-act="personPick" data-id="' + p.id + '"><td><input type="radio" name="pr"' + (on ? ' checked' : '') + ' aria-label="Select ' + esc(p.name) + '"></td><td>' + esc(p.name) + '</td><td>' + esc(p.gender || '') + '</td><td>' + esc(deptOf(p.dept) ? deptOf(p.dept).name : '') + '</td></tr>'; });
+  h += '</tbody></table></div></div></div>';
+  const dopts = c.depts.map(d => [d.id, d.name]);
+  if (UI.deptForm) h += dlg('Add department', '<div class="fgrid">' + F('Upper Department:', 'ddUp', sel('ddUp', dopts, UI.deptSel)) + F('Department Name:', 'ddName', inp('ddName', '', 'text', ' autocomplete="off"')) + '</div><p class="err" id="deptErr" role="alert"></p>', B('deptSave', 'OK', {pri: true}) + B('deptCancel', 'Cancel'));
+  if (UI.personForm) h += dlg('Add person', '<div class="fgrid">' + F('Person Name:', 'ppName', inp('ppName', '', 'text', ' autocomplete="off"')) + F('Gender:', 'ppGender', sel('ppGender', ['Female', 'Male', 'Unknown'], 'Unknown')) + F('ID No. (optional):', 'ppId', inp('ppId', '', 'text', ' autocomplete="off"')) + F('Department:', 'ppDept', sel('ppDept', dopts, UI.deptSel)) + '</div><p class="err" id="personErr" role="alert"></p>', B('personSave', 'Save', {pri: true}) + B('personCancel', 'Cancel'));
+  return h;
+}
+ACT.deptPick = el => { UI.deptSel = el.dataset.id; renderPane(); };
+ACT.deptAdd = () => { UI.deptForm = true; UI.personForm = false; renderPane(); const f = $('#ddName'); if (f) f.focus(); };
+ACT.deptCancel = () => { UI.deptForm = false; renderPane(); };
+ACT.deptSave = () => {
+  const name = val('ddName').trim(), parent = val('ddUp') || 'root';
+  if (!name) { $('#deptErr').textContent = 'Enter the department name.'; return; }
+  if (ST.cfg.depts.some(d => d.parent === parent && AC.simple(d.name) === AC.simple(name))) { $('#deptErr').textContent = 'That department already exists here.'; return; }
+  const d = {id: nid('dp'), name: name, parent: parent}; ST.cfg.depts.push(d); UI.deptSel = d.id; UI.deptForm = false;
+  say('Department ' + name + ' added under ' + deptOf(parent).name + '. It is selected now, so Add Person puts new people in it.', 'Person', 'var(--cbt-sky)');
+  after();
+};
+ACT.deptDel = () => {
+  if (UI.deptSel === 'root') return;
+  const ids = subDepts(UI.deptSel);
+  if (ST.cfg.persons.some(p => ids.includes(p.dept))) { say('This department still has people in it, so iVMS-4200 will not delete it. Move or delete the people first.', 'Person', 'var(--ctrl)'); return; }
+  const name = deptOf(UI.deptSel).name;
+  ST.cfg.depts = ST.cfg.depts.filter(d => !ids.includes(d.id)); ST.cfg.perms = ST.cfg.perms.filter(p => !(p.by === 'dept' && ids.includes(p.target)));
+  UI.deptSel = 'root'; say('Department ' + name + ' deleted.', 'Person', 'var(--cbt-sky)'); after();
+};
+ACT.personPick = el => { UI.personSel = el.dataset.id; renderPane(); };
+ACT.personAdd = () => { UI.personForm = true; UI.deptForm = false; renderPane(); const f = $('#ppName'); if (f) f.focus(); };
+ACT.personCancel = () => { UI.personForm = false; renderPane(); };
+ACT.personSave = () => {
+  const name = val('ppName').trim().replace(/\s+/g, ' '), dept = val('ppDept');
+  if (!name) { $('#personErr').textContent = 'Person Name is required.'; return; }
+  if (ST.cfg.persons.some(p => AC.simple(p.name) === AC.simple(name))) { $('#personErr').textContent = 'A person with this name already exists.'; return; }
+  ST.cfg.persons.push({id: nid('p'), name: name, gender: val('ppGender'), idno: val('ppId').trim(), dept: dept});
+  UI.personForm = false;
+  say(name + ' added to ' + deptOf(dept).name + '. ' + (dept === 'root' ? 'Default is the top level, not a department from the work order; select Clinical or Front desk first. ' : '') + 'When everyone is in, give each person a card in tab 4.', 'Person', 'var(--cbt-sky)');
+  after();
+};
+ACT.personDel = () => {
+  const p = ST.cfg.persons.find(x => x.id === UI.personSel); if (!p) return;
+  ST.cfg.persons = ST.cfg.persons.filter(x => x.id !== p.id);
+  ST.cfg.cards.forEach(c => { if (c.person === p.id) { c.person = null; c.status = 'blank'; } });
+  ST.cfg.perms = ST.cfg.perms.filter(x => !(x.by === 'person' && x.target === p.id));
+  UI.personSel = null; say(p.name + ' deleted. Any card issued to this person went back to the Blank card list.', 'Person', 'var(--cbt-sky)'); after();
+};
+
+// tab 4: cards
+function paneCard() {
+  const c = ST.cfg, cnt = s => c.cards.filter(x => x.status === s).length;
+  let h = hint('Work order: card 10045 for Ana Pérez, 10046 for Luis Romero, 10047 for Marta Sosa.');
+  h += '<div class="subtabs" role="tablist">' + [['blank', 'Blank card'], ['normal', 'Normal card'], ['lost', 'Lost card']].map(([k, t]) => '<button type="button" role="tab" data-act="cardTab" data-id="' + k + '" aria-selected="' + (UI.cardTab === k) + '">' + t + ' (' + cnt(k) + ')</button>').join('') + '</div>';
+  const list = c.cards.filter(x => x.status === UI.cardTab), picked = list.find(x => x.no === UI.cardSel);
+  const pname = id => { const p = c.persons.find(x => x.id === id); return p ? p.name : ''; };
+  const pdept = id => { const p = c.persons.find(x => x.id === id); return p && deptOf(p.dept) ? deptOf(p.dept).name : ''; };
+  if (UI.cardTab === 'blank') h += '<div class="tb">' + B('cardAdd', '<span class="plus">+</span> Add Card') + B('cardIssue', 'Issue Card', {dis: !picked}) + B('cardDel', 'Delete', {dis: !picked}) + '</div>';
+  if (UI.cardTab === 'normal') h += '<div class="tb">' + B('cardReturn', 'Return Card', {dis: !picked}) + B('cardLoss', 'Report Card Loss', {dis: !picked}) + '</div>';
+  if (UI.cardTab === 'lost') h += '<div class="tb">' + B('cardUnloss', 'Cancel Card Loss', {dis: !picked}) + '</div>';
+  h += '<div class="tw"><table><thead><tr><th></th><th>Card No.</th><th>Status</th>' + (UI.cardTab === 'blank' ? '<th>Valid</th>' : '<th>Card holder</th><th>Department</th>') + '</tr></thead><tbody>';
+  if (!list.length) h += '<tr><td colspan="5" class="empty">' + (UI.cardTab === 'blank' ? 'No blank cards. Press Add Card.' : 'No cards in this list.') + '</td></tr>';
+  list.forEach(x => { const on = UI.cardSel === x.no; h += '<tr class="pick' + (on ? ' sel' : '') + '" data-act="cardPick" data-id="' + esc(x.no) + '"><td><input type="radio" name="cr"' + (on ? ' checked' : '') + ' aria-label="Select card ' + esc(x.no) + '"></td><td>' + esc(x.no) + '</td><td>' + ({blank: 'Blank card', normal: 'Normal card', lost: 'Card reported loss'}[x.status]) + '</td>' + (UI.cardTab === 'blank' ? '<td>' + esc(x.act) + ' to ' + esc(x.exp) + '</td>' : '<td>' + esc(pname(x.person)) + '</td><td>' + esc(pdept(x.person)) + '</td>') + '</tr>'; });
+  h += '</tbody></table></div>';
+  if (UI.cardForm && UI.cardTab === 'blank') {
+    const one = UI.cardMethod === 'one';
+    h += dlg('Add card', '<div class="fgrid"><span>Adding Method:</span><span><label><input type="radio" name="cm" data-act="cardMethod" data-id="one"' + (one ? ' checked' : '') + '> Add One</label> &nbsp; <label><input type="radio" name="cm" data-act="cardMethod" data-id="bulk"' + (one ? '' : ' checked') + '> Bulk Adding</label></span>' +
+      F('Activation Date:', 'caAct', inp('caAct', '2026-01-01', 'date')) + F('Expiry Date:', 'caExp', inp('caExp', '2036-12-31', 'date')) +
+      (one ? F('Card No.:', 'caNo', inp('caNo', '', 'text', ' inputmode="numeric" autocomplete="off"')) : F('Start Card No.:', 'caStart', inp('caStart', '', 'text', ' inputmode="numeric" autocomplete="off"')) + F('End Card No.:', 'caEnd', inp('caEnd', '', 'text', ' inputmode="numeric" autocomplete="off"'))) +
+      '</div><p class="err" id="cardErr" role="alert"></p>', B('cardSave', 'OK', {pri: true}) + B('cardCancel', 'Cancel'));
+  }
+  if (UI.issue && picked && UI.cardTab === 'blank') {
+    const groups = c.depts.map(d => { const ps = c.persons.filter(p => p.dept === d.id); return ps.length ? '<optgroup label="' + esc(d.name) + '">' + ps.map(p => '<option value="' + p.id + '">' + esc(p.name) + '</option>').join('') + '</optgroup>' : ''; }).join('');
+    h += dlg('Issue card', '<div class="fgrid">' + F('Card No.:', 'icNo', inp('icNo', picked.no, 'text', ' readonly')) + F('Person for this card:', 'icPerson', '<select id="icPerson">' + (groups || '<option value="">No people yet: add them in tab 3</option>') + '</select>') + '</div>', B('cardIssueOk', 'OK', {pri: true}) + B('cardIssueCancel', 'Cancel'));
+  }
+  return h;
+}
+const pickedCard = () => ST.cfg.cards.find(x => x.no === UI.cardSel);
+const personName = id => { const p = ST.cfg.persons.find(x => x.id === id); return p ? p.name : 'nobody'; };
+ACT.cardTab = el => { UI.cardTab = el.dataset.id; UI.cardSel = null; UI.issue = false; UI.cardForm = false; renderPane(); };
+ACT.cardPick = el => { UI.cardSel = el.dataset.id; UI.issue = false; renderPane(); };
+ACT.cardAdd = () => { UI.cardForm = true; UI.issue = false; renderPane(); };
+ACT.cardMethod = el => { UI.cardMethod = el.dataset.id; renderPane(); };
+ACT.cardCancel = () => { UI.cardForm = false; renderPane(); };
+ACT.cardSave = () => {
+  const act = val('caAct'), exp = val('caExp'), err = m => { $('#cardErr').textContent = m; };
+  if (AC.weekday(act) < 0 || AC.weekday(exp) < 0 || act > exp) return err('Check the dates: the activation date must come before the expiry date.');
+  let nos = [];
+  if (UI.cardMethod === 'one') { const n = val('caNo').trim(); if (!/^\d{1,10}$/.test(n)) return err('A card number is 1 to 10 digits, for example 10045.'); nos = [n]; }
+  else {
+    const a = val('caStart').trim(), b = val('caEnd').trim();
+    if (!/^\d{1,10}$/.test(a) || !/^\d{1,10}$/.test(b)) return err('Card numbers are 1 to 10 digits.');
+    if (a.length !== b.length) return err('The start and end card numbers must have the same length.');
+    if (+a > +b) return err('The start card number must not be larger than the end card number.');
+    if (+b - +a >= 100) return err('Add at most 100 cards at a time in this lab.');
+    for (let i = +a; i <= +b; i++) nos.push(String(i).padStart(a.length, '0'));
+  }
+  const dup = nos.filter(n => ST.cfg.cards.some(c => c.no === n));
+  if (dup.length) return err('Already in the system: ' + dup.join(', ') + '.');
+  nos.forEach(n => ST.cfg.cards.push({no: n, status: 'blank', person: null, act: act, exp: exp}));
+  UI.cardForm = false; UI.cardSel = nos[0];
+  say('Added ' + (nos.length === 1 ? 'card ' + nos[0] : nos.length + ' cards, ' + nos[0] + ' to ' + nos[nos.length - 1]) + ' to the Blank card list. A blank card belongs to nobody yet. Select a card and press Issue Card to give it to a person.', 'Card', 'var(--cbt-sky)');
+  after();
+};
+ACT.cardIssue = () => { if (pickedCard()) { UI.issue = true; UI.cardForm = false; renderPane(); } };
+ACT.cardIssueCancel = () => { UI.issue = false; renderPane(); };
+ACT.cardIssueOk = () => {
+  const c = pickedCard(), pid = val('icPerson'); if (!c || !pid) return;
+  c.status = 'normal'; c.person = pid; UI.issue = false; UI.cardSel = null;
+  say('Card ' + c.no + ' is now a normal card issued to ' + personName(pid) + '. It left the Blank card list; find it under Normal card.', 'Card', 'var(--cbt-sky)');
+  after();
+};
+ACT.cardDel = () => { const c = pickedCard(); if (!c) return; ST.cfg.cards = ST.cfg.cards.filter(x => x !== c); UI.cardSel = null; say('Card ' + c.no + ' deleted.', 'Card', 'var(--cbt-sky)'); after(); };
+ACT.cardReturn = () => { const c = pickedCard(); if (!c) return; const who = personName(c.person); c.status = 'blank'; c.person = null; UI.cardSel = null; say('Card ' + c.no + ' returned by ' + who + '. It is blank again. Download the permissions so the controller forgets it too.', 'Card', 'var(--cbt-sky)'); after(); };
+ACT.cardLoss = () => { const c = pickedCard(); if (!c) return; c.status = 'lost'; UI.cardSel = null; say('Card ' + c.no + ' reported lost. The controller still accepts it until you download the permissions again; try it on the test bench before and after.', 'Card', 'var(--ctrl)'); after(); };
+ACT.cardUnloss = () => { const c = pickedCard(); if (!c) return; c.status = 'normal'; UI.cardSel = null; say('Card loss cancelled: ' + c.no + ' is a normal card again for ' + personName(c.person) + '. Download the permissions to tell the controller.', 'Card', 'var(--cbt-sky)'); after(); };
+
+// tab 5: week plan, holiday group, template
+const wpCur = () => ST.cfg.weekPlans.find(w => w.id === UI.wpSel) || ST.cfg.weekPlans[0];
+function paneSched() {
+  let h = hint('Work order: week plan Office hours, Monday to Friday 07:00 to 19:00, Saturday 08:00 to 13:00, Sunday closed. Template Office hours.');
+  h += '<div class="subtabs" role="tablist">' + [['week', 'Week Plan'], ['hol', 'Holiday Group'], ['tpl', 'Template']].map(([k, t]) => '<button type="button" role="tab" data-act="schTab" data-id="' + k + '" aria-selected="' + (UI.schTab === k) + '">' + t + '</button>').join('') + '</div>';
+  if (UI.schTab === 'week') {
+    const w = wpCur(); UI.wpSel = w.id;
+    h += '<div class="tb">' + B('wpAdd', '<span class="plus">+</span> Add Week Plan') + B('wpDel', 'Delete Week Plan', {dis: w.fixed}) + '</div>';
+    h += '<div class="tree" style="min-height:0;margin-bottom:8px" aria-label="Week plans">' + ST.cfg.weekPlans.map(x => '<button type="button" class="' + (x.id === w.id ? 'sel' : '') + '" data-act="wpPick" data-id="' + x.id + '">' + esc(x.name) + (x.fixed ? ' <span class="ro">(default)</span>' : '') + '</button>').join('') + '</div>';
+    if (UI.wpForm) h += dlg('Add week plan', '<div class="fgrid">' + F('Week Plan Name:', 'wpName', inp('wpName', '', 'text', ' autocomplete="off"')) + '</div><p class="err" id="wpErr" role="alert"></p>', B('wpSave', 'OK', {pri: true}) + B('wpCancel', 'Cancel'));
+    h += '<h3>' + esc(w.name) + (w.fixed ? ' (read only)' : '') + '</h3>';
+    h += '<p class="say">' + (w.fixed ? 'The default plans cannot be edited. Add your own week plan.' : 'Click hour blocks to turn them on or off (drag with a mouse). Blue means the permission is active. For half hours, use the From and To fields.') + '</p>';
+    let g = '<div class="wp' + (w.fixed ? ' ro' : '') + '" id="wpGrid"><div class="hd0"></div>';
+    for (let i = 0; i < 24; i += 2) g += '<div class="hd">' + pad(i) + '</div>';
+    for (let d = 0; d < 7; d++) {
+      g += '<button type="button" class="dn' + (UI.wpDay === d ? ' sel' : '') + '" data-act="wpDay" data-id="' + d + '" aria-label="Select ' + AC.DAYS[d] + '">' + AC.DAYS[d].slice(0, 3) + '</button>';
+      for (let hr = 0; hr < 24; hr++) g += '<button type="button" class="c" data-d="' + d + '" data-h="' + hr + '" aria-label="' + AC.DAYS[d] + ' ' + pad(hr) + ':00 to ' + pad(hr + 1) + ':00"' + (w.fixed ? ' disabled' : '') + '></button>';
+    }
+    h += g + '</div>';
+    if (!w.fixed) {
+      h += '<div class="rowform"><strong style="font-size:12.5px;align-self:center">' + AC.DAYS[UI.wpDay] + ':</strong>' + B('wpCopy', 'Copy to Week') + B('wpClear', 'Clear Duration') + '</div>';
+      h += '<div class="rowform"><label>From<input type="time" id="wpFrom" step="1800" value="07:00"></label><label>To<input type="time" id="wpTo" step="1800" value="19:00"></label>' + B('wpAddSpan', 'Add duration', {pri: true}) + B('wpDelSpan', 'Delete duration') + '</div><p class="err" id="wpSpanErr" role="alert"></p>';
+    }
+    h += '<ul class="daylist" id="wpList">' + dayList(w) + '</ul>';
+  } else if (UI.schTab === 'hol') {
+    const gsel = ST.cfg.holGroups.find(x => x.id === UI.hgSel) || ST.cfg.holGroups[0];
+    if (gsel) UI.hgSel = gsel.id;
+    h += '<p class="say">Optional in this work order. A holiday group lists dates with their own hours (usually none: closed). It has priority over the week plan.</p>';
+    h += '<div class="tb">' + B('hgAdd', '<span class="plus">+</span> Add Holiday Group') + B('hgDel', 'Delete', {dis: !gsel}) + '</div>';
+    if (UI.hgForm) h += dlg('Add holiday group', '<div class="fgrid">' + F('Holiday Group Name:', 'hgName', inp('hgName', '', 'text', ' autocomplete="off"')) + '</div><p class="err" id="hgErr" role="alert"></p>', B('hgSave', 'OK', {pri: true}) + B('hgCancel', 'Cancel'));
+    if (ST.cfg.holGroups.length) h += '<div class="tree" style="min-height:0;margin-bottom:8px">' + ST.cfg.holGroups.map(x => '<button type="button" class="' + (gsel && x.id === gsel.id ? 'sel' : '') + '" data-act="hgPick" data-id="' + x.id + '">' + esc(x.name) + '</button>').join('') + '</div>';
+    if (gsel) {
+      h += '<h3>Holiday list: ' + esc(gsel.name) + '</h3><div class="tw"><table><thead><tr><th>Start</th><th>End</th><th>Hours allowed</th><th></th></tr></thead><tbody>';
+      if (!gsel.hols.length) h += '<tr><td colspan="4" class="empty">No holidays yet.</td></tr>';
+      gsel.hols.forEach((x, i) => { h += '<tr><td>' + esc(x.start) + '</td><td>' + esc(x.end) + '</td><td>' + AC.spansText(x.spans) + '</td><td>' + B('holDel', 'Delete', {id: i}) + '</td></tr>'; });
+      h += '</tbody></table></div><div class="rowform"><label>Start date<input type="date" id="holStart" value="2026-11-26"></label><label>End date<input type="date" id="holEnd" value="2026-11-26"></label><label>From (optional)<input type="time" id="holFrom" step="1800"></label><label>To<input type="time" id="holTo" step="1800"></label>' + B('holAdd', 'Add holiday', {pri: true}) + '</div><p class="err" id="holErr" role="alert"></p>';
+    }
+  } else {
+    const t = ST.cfg.templates.find(x => x.id === UI.tpSel) || ST.cfg.templates[0]; UI.tpSel = t.id;
+    h += '<div class="tb">' + B('tpAdd', '<span class="plus">+</span> Add Template') + B('tpDel', 'Delete', {dis: t.fixed}) + '</div>';
+    if (UI.tpForm) h += dlg('Add template', '<div class="fgrid">' + F('Template Name:', 'tpName', inp('tpName', '', 'text', ' autocomplete="off"')) + '</div><p class="err" id="tpErr" role="alert"></p>', B('tpSave', 'OK', {pri: true}) + B('tpCancel', 'Cancel'));
+    h += '<div class="tree" style="min-height:0;margin-bottom:8px">' + ST.cfg.templates.map(x => '<button type="button" class="' + (x.id === t.id ? 'sel' : '') + '" data-act="tpPick" data-id="' + x.id + '">' + esc(x.name) + (x.fixed ? ' <span class="ro">(default)</span>' : '') + '</button>').join('') + '</div>';
+    h += '<h3>' + esc(t.name) + '</h3>';
+    if (t.fixed) h += '<p class="say">This default template uses Enable Week Plan by Default: every day, all day. It cannot be edited.</p>';
+    else {
+      h += '<div class="fgrid">' + F('Week Plan:', 'tpWeek', sel('tpWeek', ST.cfg.weekPlans.map(w => [w.id, w.name]), t.week)) + '</div><p class="say" style="margin-top:8px">Holiday groups (at most 4):</p><div class="chk">' +
+        (ST.cfg.holGroups.length ? ST.cfg.holGroups.map(g => '<label><input type="checkbox" id="tpH-' + g.id + '"' + (t.hols.includes(g.id) ? ' checked' : '') + '> ' + esc(g.name) + '</label>').join('') : '<span class="ro">No holiday groups (optional).</span>') +
+        '</div><p class="err" id="tpSetErr" role="alert"></p><div class="tb" style="margin-top:8px">' + B('tpApply', 'Save', {pri: true}) + '</div>';
+      const w = ST.cfg.weekPlans.find(x => x.id === t.week);
+      if (w) h += '<ul class="daylist">' + dayList(w) + '</ul>';
+    }
+  }
+  return h;
+}
+const dayList = w => w.days.map((d, i) => '<li>' + AC.DAYS[i].slice(0, 3) + ': ' + AC.spansText(AC.norm(d)) + '</li>').join('');
+function paintGrid() {
+  const w = wpCur(), grid = $('#wpGrid'); if (!grid) return;
+  grid.querySelectorAll('.c').forEach(c => {
+    const d = +c.dataset.d, hr = +c.dataset.h, a = hr * 60, b = a + 60;
+    let s = null, e = null, cov = 0;
+    AC.norm(w.days[d]).forEach(([x, y]) => { const lo = Math.max(a, x), hi = Math.min(b, y); if (hi > lo) { cov += hi - lo; if (s === null) s = lo; e = hi; } });
+    c.classList.toggle('on', cov === 60);
+    c.style.background = cov > 0 && cov < 60 ? 'linear-gradient(90deg,#fff ' + ((s - a) / 0.6) + '%,#38B0E0 ' + ((s - a) / 0.6) + '%,#38B0E0 ' + ((e - a) / 0.6) + '%,#fff ' + ((e - a) / 0.6) + '%)' : '';
+    c.setAttribute('aria-pressed', cov === 60 ? 'true' : cov ? 'mixed' : 'false');
+  });
+  const l = $('#wpList'); if (l) l.innerHTML = dayList(w);
+}
+function cellFull(w, d, hr) { return AC.norm(w.days[d]).some(([x, y]) => x <= hr * 60 && y >= hr * 60 + 60); }
+function setCell(d, hr, on) { const w = wpCur(); if (w.fixed) return; w.days[d] = on ? AC.addSpan(w.days[d], hr * 60, hr * 60 + 60) : AC.removeSpan(w.days[d], hr * 60, hr * 60 + 60); }
+function cellsChanged() { paintGrid(); renderScore(); renderTabs(); save(); }
+let paint = null, mouseCell = false;
+ACT.schTab = el => { UI.schTab = el.dataset.id; renderPane(); };
+ACT.wpPick = el => { UI.wpSel = el.dataset.id; renderPane(); };
+ACT.wpDay = el => { UI.wpDay = +el.dataset.id; renderPane(); };
+ACT.wpAdd = () => { UI.wpForm = true; renderPane(); const f = $('#wpName'); if (f) f.focus(); };
+ACT.wpCancel = () => { UI.wpForm = false; renderPane(); };
+ACT.wpSave = () => {
+  const n = val('wpName').trim(); if (!n) { $('#wpErr').textContent = 'Enter the week plan name.'; return; }
+  if (ST.cfg.weekPlans.some(w => AC.simple(w.name) === AC.simple(n))) { $('#wpErr').textContent = 'That name is taken.'; return; }
+  const w = {id: nid('w'), name: n, days: [[], [], [], [], [], [], []]}; ST.cfg.weekPlans.push(w); UI.wpSel = w.id; UI.wpForm = false; UI.wpDay = 0;
+  say('Week plan ' + n + ' added, empty. Fill Monday first (07:00 to 19:00), then use Copy to Week and fix Saturday and Sunday.', 'Schedule', 'var(--cbt-sky)'); after();
+};
+ACT.wpDel = () => {
+  const w = wpCur(); if (w.fixed) return;
+  if (ST.cfg.templates.some(t => t.week === w.id)) { say('A template still uses ' + w.name + '. Change that template first.', 'Schedule', 'var(--ctrl)'); return; }
+  ST.cfg.weekPlans = ST.cfg.weekPlans.filter(x => x !== w); UI.wpSel = 'wp-en'; say('Week plan ' + w.name + ' deleted.', 'Schedule', 'var(--cbt-sky)'); after();
+};
+ACT.wpCopy = () => { const w = wpCur(); if (w.fixed) return; const src = AC.norm(w.days[UI.wpDay]); w.days = w.days.map(() => src.map(x => x.slice())); say('Copied ' + AC.DAYS[UI.wpDay] + ' (' + AC.spansText(src) + ') to the whole week, Saturday and Sunday included. Now fix the days that differ.', 'Schedule', 'var(--cbt-sky)'); cellsChanged(); };
+ACT.wpClear = () => { const w = wpCur(); if (w.fixed) return; w.days[UI.wpDay] = []; say(AC.DAYS[UI.wpDay] + ' cleared: no access on that day.', 'Schedule', 'var(--cbt-sky)'); cellsChanged(); };
+function spanFromForm() {
+  const a = AC.toMin(val('wpFrom')); let b = AC.toMin(val('wpTo'));
+  if (b === 0) b = 1440;
+  if (isNaN(a) || isNaN(b) || b <= a) { $('#wpSpanErr').textContent = 'Pick a From time earlier than the To time.'; return null; }
+  $('#wpSpanErr').textContent = ''; return [a, b];
+}
+ACT.wpAddSpan = () => { const w = wpCur(), s = spanFromForm(); if (!s || w.fixed) return; w.days[UI.wpDay] = AC.addSpan(w.days[UI.wpDay], s[0], s[1]); say(AC.DAYS[UI.wpDay] + ' now allows ' + AC.spansText(AC.norm(w.days[UI.wpDay])) + '. The end time is not included.', 'Schedule', 'var(--cbt-sky)'); cellsChanged(); };
+ACT.wpDelSpan = () => { const w = wpCur(), s = spanFromForm(); if (!s || w.fixed) return; w.days[UI.wpDay] = AC.removeSpan(w.days[UI.wpDay], s[0], s[1]); say(AC.DAYS[UI.wpDay] + ' now allows ' + AC.spansText(AC.norm(w.days[UI.wpDay])) + '.', 'Schedule', 'var(--cbt-sky)'); cellsChanged(); };
+ACT.hgPick = el => { UI.hgSel = el.dataset.id; renderPane(); };
+ACT.hgAdd = () => { UI.hgForm = true; renderPane(); const f = $('#hgName'); if (f) f.focus(); };
+ACT.hgCancel = () => { UI.hgForm = false; renderPane(); };
+ACT.hgSave = () => {
+  const n = val('hgName').trim(); if (!n) { $('#hgErr').textContent = 'Enter the holiday group name.'; return; }
+  const g = {id: nid('h'), name: n, hols: []}; ST.cfg.holGroups.push(g); UI.hgSel = g.id; UI.hgForm = false;
+  say('Holiday group ' + n + ' added. Add the dates the office is closed, then tick this group in the template.', 'Schedule', 'var(--cbt-sky)'); after();
+};
+ACT.hgDel = () => {
+  const g = ST.cfg.holGroups.find(x => x.id === UI.hgSel); if (!g) return;
+  ST.cfg.holGroups = ST.cfg.holGroups.filter(x => x !== g); ST.cfg.templates.forEach(t => { t.hols = t.hols.filter(id => id !== g.id); }); UI.hgSel = null;
+  say('Holiday group ' + g.name + ' deleted and removed from every template.', 'Schedule', 'var(--cbt-sky)'); after();
+};
+ACT.holAdd = () => {
+  const g = ST.cfg.holGroups.find(x => x.id === UI.hgSel); if (!g) return;
+  const s = val('holStart'), e = val('holEnd'), f = val('holFrom'), t = val('holTo'), err = m => { $('#holErr').textContent = m; };
+  if (AC.weekday(s) < 0 || AC.weekday(e) < 0 || s > e) return err('Pick a start date on or before the end date.');
+  if (g.hols.length >= 16) return err('At most 16 holiday periods.');
+  if (g.hols.some(x => !(e < x.start || s > x.end))) return err('Holidays cannot overlap each other.');
+  let spans = [];
+  if (f || t) { const a = AC.toMin(f); let b = AC.toMin(t); if (b === 0) b = 1440; if (isNaN(a) || isNaN(b) || b <= a) return err('Leave From and To empty for a closed day, or pick From earlier than To.'); spans = [[a, b]]; }
+  g.hols.push({start: s, end: e, spans: spans}); g.hols.sort((x, y) => x.start < y.start ? -1 : 1);
+  say('Holiday ' + s + (e !== s ? ' to ' + e : '') + ' added: ' + (spans.length ? 'access only ' + AC.spansText(spans) : 'no access all day') + '. Download the permissions after you add the group to the template.', 'Schedule', 'var(--cbt-sky)'); after();
+};
+ACT.holDel = el => { const g = ST.cfg.holGroups.find(x => x.id === UI.hgSel); if (!g) return; g.hols.splice(+el.dataset.id, 1); after(); };
+ACT.tpPick = el => { UI.tpSel = el.dataset.id; renderPane(); };
+ACT.tpAdd = () => { UI.tpForm = true; renderPane(); const f = $('#tpName'); if (f) f.focus(); };
+ACT.tpCancel = () => { UI.tpForm = false; renderPane(); };
+ACT.tpSave = () => {
+  const n = val('tpName').trim(); if (!n) { $('#tpErr').textContent = 'Enter the template name.'; return; }
+  if (ST.cfg.templates.some(t => AC.simple(t.name) === AC.simple(n))) { $('#tpErr').textContent = 'That name is taken.'; return; }
+  const t = {id: nid('t'), name: n, week: 'wp-en', hols: []}; ST.cfg.templates.push(t); UI.tpSel = t.id; UI.tpForm = false;
+  say('Template ' + n + ' added. It starts with Enable Week Plan by Default (all day, every day): choose your own week plan and press Save.', 'Schedule', 'var(--cbt-sky)'); after();
+};
+ACT.tpApply = () => {
+  const t = ST.cfg.templates.find(x => x.id === UI.tpSel); if (!t || t.fixed) return;
+  const hols = ST.cfg.holGroups.filter(g => { const c = document.getElementById('tpH-' + g.id); return c && c.checked; }).map(g => g.id);
+  if (hols.length > 4) { $('#tpSetErr').textContent = 'At most 4 holiday groups.'; return; }
+  t.week = val('tpWeek'); t.hols = hols;
+  const w = ST.cfg.weekPlans.find(x => x.id === t.week);
+  say('Template ' + t.name + ' saved with the week plan ' + w.name + (hols.length ? ' and ' + hols.length + ' holiday group' + (hols.length > 1 ? 's' : '') + '. Holiday dates win over the week plan.' : '.') + ' Next: tab 6, Permission.', 'Schedule', 'var(--cbt-sky)'); after();
+};
+ACT.tpDel = () => {
+  const t = ST.cfg.templates.find(x => x.id === UI.tpSel); if (!t || t.fixed) return;
+  if (ST.cfg.perms.some(p => p.tpl === t.id)) { say('A permission still uses ' + t.name + '. Delete that permission first.', 'Schedule', 'var(--ctrl)'); return; }
+  ST.cfg.templates = ST.cfg.templates.filter(x => x !== t); UI.tpSel = 'tp-en'; say('Template ' + t.name + ' deleted.', 'Schedule', 'var(--cbt-sky)'); after();
+};
+
+// tab 6: permissions and Download Permission
+function panePerm() {
+  const c = ST.cfg, dev = online();
+  let h = hint('Work order: both departments (or all three people) on Staff entrance_Door1 with the Office hours template. Then Start Downloading.');
+  h += '<div class="tb">' + B('pmAdd', '<span class="plus">+</span> Add Permission') + B('pmDel', 'Delete Permission', {dis: !c.perms.some(p => p.id === UI.permSel)}) + B('pmDl', 'Start Downloading', {pri: true}) + '</div>';
+  if (UI.permWiz) {
+    const z = UI.permWiz;
+    if (z.step === 1) h += dlg('New access control permission: choose type', '<div class="chk" style="max-height:none">' +
+      '<label><input type="radio" name="pwBy" value="person"' + (z.by === 'person' ? ' checked' : '') + '> By Person: choose people for the door</label>' +
+      '<label><input type="radio" name="pwBy" value="dept"' + (z.by === 'dept' ? ' checked' : '') + '> By Department: everyone in the department, now and later</label>' +
+      '<label class="ro"><input type="radio" disabled> By Access Control Point (not used in this lab)</label><label class="ro"><input type="radio" disabled> By Door Group (not used in this lab)</label></div>',
+      B('pmNext', 'Next', {pri: true}) + B('pmCancel', 'Cancel'));
+    else {
+      const who = z.by === 'person' ? c.depts.map(d => { const ps = c.persons.filter(p => p.dept === d.id); return ps.length ? '<span class="grp">' + esc(d.name) + '</span>' + ps.map(p => '<label><input type="checkbox" id="pwT-' + p.id + '"> ' + esc(p.name) + '</label>').join('') : ''; }).join('')
+        : c.depts.map(d => '<label><input type="checkbox" id="pwT-' + d.id + '"> ' + esc(d.name) + (d.id === 'root' ? ' (everyone)' : '') + '</label>').join('');
+      h += dlg('New access control permission: settings', '<div class="fgrid">' + F('Template:', 'pwTpl', sel('pwTpl', c.templates.map(t => [t.id, t.name]), 'tp-en')) + '</div>' +
+        '<div class="split" style="margin-top:8px"><div><p class="say">Please choose ' + (z.by === 'person' ? 'person' : 'department') + ':</p><div class="chk">' + (who || '<span class="ro">Nothing to choose yet: add people in tab 3.</span>') + '</div></div>' +
+        '<div><p class="say">Please choose the access control point:</p><div class="chk">' + (c.devices.length ? c.devices.map(d => '<label><input type="checkbox" id="pwD-' + d.id + '"> ' + esc(doorName(d)) + '</label>').join('') : '<span class="ro">No doors yet: add the controller in tab 1.</span>') + '</div></div></div><p class="err" id="pwErr" role="alert"></p>',
+        B('pmPrev', 'Previous') + B('pmDone', 'Done', {pri: true}) + B('pmCancel', 'Cancel'));
+    }
+  }
+  if (UI.dl) h += dlg('Download permission', '<p class="say">Download Method: Download All. Please choose the controller to download to:</p><div class="chk">' + (c.devices.length ? c.devices.map(d => '<label><input type="checkbox" id="dlD-' + d.id + '"' + (c.devices.length === 1 ? ' checked' : '') + '> ' + esc(d.name) + ' (' + esc(d.addr) + ')</label>').join('') : '<span class="ro">No devices.</span>') + '</div><p class="err" id="dlErr" role="alert"></p>', B('dlOk', 'OK', {pri: true}) + B('dlCancel', 'Cancel'));
+  if (UI.dlResult) {
+    const r = UI.dlResult, allOk = r.every(x => x.ok);
+    h += dlg('Download result', '<p class="say">Permission download: ' + (allOk ? 'Downloaded (100%)' : 'finished with errors') + '</p><div class="progress-bar"><i style="width:100%;' + (allOk ? '' : 'background:#B3261E') + '"></i></div><div class="tw"><table><thead><tr><th>Device</th><th>Progress</th><th>Result</th><th>Remark</th></tr></thead><tbody>' +
+      r.map(x => '<tr><td>' + esc(x.name) + '</td><td>100%</td><td class="' + (x.ok ? 'ev-ok' : 'ev-bad') + '">' + (x.ok ? 'All succeeded' : 'Failed') + '</td><td>' + esc(x.remark) + '</td></tr>').join('') + '</tbody></table></div>', B('dlClose', 'Close'));
+  }
+  h += '<div class="tw"><table><thead><tr><th></th><th>Type</th><th>Name</th><th>Access control point</th><th>Template</th></tr></thead><tbody>';
+  if (!c.perms.length) h += '<tr><td colspan="5" class="empty">No permissions yet. Press Add Permission.</td></tr>';
+  c.perms.forEach(p => {
+    const nm = p.by === 'person' ? personName(p.target) : (deptOf(p.target) || {name: '?'}).name, d = c.devices.find(x => x.id === p.dev), t = c.templates.find(x => x.id === p.tpl), on = UI.permSel === p.id;
+    h += '<tr class="pick' + (on ? ' sel' : '') + '" data-act="pmPick" data-id="' + p.id + '"><td><input type="radio" name="pmr"' + (on ? ' checked' : '') + ' aria-label="Select permission for ' + esc(nm) + '"></td><td>' + (p.by === 'person' ? 'Person' : 'Department') + '</td><td>' + esc(nm) + '</td><td>' + esc(d ? doorName(d) : '?') + '</td><td>' + esc(t ? t.name : '?') + '</td></tr>';
+  });
+  h += '</tbody></table></div>';
+  if (dev) {
+    const same = ST.ctrl.perm && JSON.stringify(ST.ctrl.perm) === JSON.stringify(AC.compile(c, dev.id));
+    h += !ST.ctrl.perm ? '<p class="warnmsg">The controller has not received any permission yet.</p>' : same ? '<p class="okmsg">The controller has the same permissions as iVMS-4200.</p>' : '<p class="warnmsg">Something changed since the last download. The controller still uses its old copy.</p>';
+  }
+  return h;
+}
+ACT.pmPick = el => { UI.permSel = el.dataset.id; renderPane(); };
+ACT.pmAdd = () => { UI.permWiz = {step: 1, by: 'dept'}; UI.dl = false; UI.dlResult = null; renderPane(); };
+ACT.pmCancel = () => { UI.permWiz = null; renderPane(); };
+ACT.pmNext = () => { const r = document.querySelector('input[name="pwBy"]:checked'); UI.permWiz = {step: 2, by: r ? r.value : 'dept'}; renderPane(); };
+ACT.pmPrev = () => { UI.permWiz.step = 1; renderPane(); };
+ACT.pmDone = () => {
+  const c = ST.cfg, by = UI.permWiz.by, tpl = val('pwTpl');
+  const targets = (by === 'person' ? c.persons : c.depts).filter(x => { const e = document.getElementById('pwT-' + x.id); return e && e.checked; }).map(x => x.id);
+  const devs = c.devices.filter(d => { const e = document.getElementById('pwD-' + d.id); return e && e.checked; }).map(d => d.id);
+  if (!targets.length || !devs.length) { $('#pwErr').textContent = 'Choose at least one ' + (by === 'person' ? 'person' : 'department') + ' and one access control point.'; return; }
+  targets.forEach(t => devs.forEach(d => { const ex = c.perms.find(p => p.by === by && p.target === t && p.dev === d); if (ex) ex.tpl = tpl; else c.perms.push({id: nid('pm'), by: by, target: t, dev: d, tpl: tpl}); }));
+  UI.permWiz = null;
+  const tn = c.templates.find(t => t.id === tpl).name;
+  say('Permission added with the template ' + tn + (tpl === 'tp-en' ? ' (every day, all day: is that what the work order asks?)' : '') + '. It lives only in iVMS-4200 for now. Press Start Downloading to copy it into the controller.', 'Permission', 'var(--cbt-sky)');
+  after();
+};
+ACT.pmDel = () => { const p = ST.cfg.perms.find(x => x.id === UI.permSel); if (!p) return; ST.cfg.perms = ST.cfg.perms.filter(x => x !== p); UI.permSel = null; say('Permission deleted in iVMS-4200. The controller keeps it until the next download.', 'Permission', 'var(--cbt-sky)'); after(); };
+ACT.pmDl = () => { UI.dl = true; UI.permWiz = null; UI.dlResult = null; renderPane(); };
+ACT.dlCancel = () => { UI.dl = false; renderPane(); };
+ACT.dlClose = () => { UI.dlResult = null; renderPane(); };
+ACT.dlOk = () => {
+  const c = ST.cfg, chosen = c.devices.filter(d => { const e = document.getElementById('dlD-' + d.id); return e && e.checked; });
+  if (!chosen.length) { $('#dlErr').textContent = 'Choose a controller.'; return; }
+  const res = chosen.map(d => { const k = AC.connect(d); if (k.online) { ST.ctrl.perm = AC.compile(c, d.id); return {name: d.name, ok: true, remark: Object.keys(ST.ctrl.perm.cards).length + ' cards'}; } return {name: d.name, ok: false, remark: 'Device offline'}; });
+  UI.dl = false; UI.dlResult = res;
+  const good = res.find(r => r.ok);
+  anim(() => { const t = gsap.timeline(); t.call(() => { G.clear(); G.hi('pc', SKY); G.bus('net'); }); t.add(G.fly('net', good ? good.remark : 'download', good ? SKY : CORAL)); if (good) t.call(() => { G.hi('ctrl', GREEN); G.pop('ctrl'); }); t.to({}, {duration: 1.2}); t.call(() => G.clear()); });
+  say(good ? 'Download finished: the controller now holds ' + good.remark + ' with their door rights and schedules. From now on it decides by itself, even with the PC turned off. Next: test cards on the test bench and check tab 8, Events.' : 'Download failed: the controller is Offline. Fix the connection in tab 1, then download again.', 'Permission', good ? 'var(--ok)' : 'var(--ctrl)');
+  after();
+};
+
+// tab 7: status monitor and door anti-control
+function doorIcon(st) {
+  const open = /^Open|Remain open/.test(st.t), col = st.t === 'Offline' ? '#9aa0b8' : st.bad ? '#B3261E' : '#7a5230';
+  return '<svg viewBox="0 0 64 84" aria-hidden="true"><rect x="8" y="4" width="48" height="76" rx="2" fill="#2a2f45"/>' +
+    (open ? '<path d="M12 8 L40 14 L40 78 L12 76 Z" fill="' + col + '"/><rect x="40" y="8" width="12" height="70" fill="#1a1d2e"/>' : '<rect x="12" y="8" width="40" height="70" fill="' + col + '"/><circle cx="44" cy="44" r="2.5" fill="#E0B840"/>') + '</svg>';
+}
+function statusBox() {
+  const st = ctrlStatus();
+  return doorIcon(st) + '<div><div class="ds' + (st.bad ? ' bad' : '') + '">' + esc(doorName()) + ': ' + esc(st.t) + '</div><div class="say">Strike ' + (relayOn() ? 'strike released' : 'locked') + '. Door contact reads ' + (HW.pOpen ? 'open' : 'closed') + '. Mode: ' + ({normal: 'normal (follows cards and schedule)', remainOpen: 'remain open', remainClosed: 'remain closed'}[ST.ctrl.mode]) + '.</div></div>';
+}
+function liveBox() {
+  const e = ST.events[0];
+  return '<span>Event Source:</span><b>' + esc(e ? e.src : '') + '</b><span>Card No.:</span><b>' + esc(e ? e.no : '') + '</b><span>Event Type:</span><b>' + esc(e ? e.type : '') + '</b><span>Event Time:</span><b>' + esc(e ? e.time : '') + '</b>';
+}
+function paneStatus() {
+  const dev = online();
+  let h = hint('Work order: open the door once from here and watch the strike on the board.');
+  h += '<h3>Status information</h3><div class="tb">' + B('acOpen', 'Open door', {dis: !ST.cfg.devices.length}) + B('acClose', 'Close door', {dis: !ST.cfg.devices.length}) + B('acRemainOpen', 'Remain open', {dis: !ST.cfg.devices.length}) + B('acRemainClosed', 'Remain closed', {dis: !ST.cfg.devices.length}) + '</div>';
+  h += ST.cfg.devices.length ? '<div class="doorbox" id="stBox">' + statusBox() + '</div>' : '<p class="say">No door yet: add the controller in tab 1.</p>';
+  h += '<h3>Real-time event</h3><div class="live" id="stLive">' + liveBox() + '</div><div class="tb" style="margin-top:8px">' + B('evMore', 'More') + '</div>';
+  if (!dev && ST.cfg.devices.length) h += '<p class="err">No device is Online, so commands cannot reach the controller and no events arrive.</p>';
+  return h;
+}
+function anti(cmd) {
+  const dev = online();
+  if (!dev) { say('The command did not reach the controller: no device is Online. Fix tab 1 first.', 'Status', 'var(--ctrl)'); return; }
+  const C = ST.ctrl, lt = +C.door.lockTime;
+  const label = {open: 'open door', close: 'close door', remainOpen: 'remain open', remainClosed: 'remain closed'}[cmd];
+  if (cmd === 'open') {
+    if (C.mode === 'remainClosed') C.mode = 'normal';
+    C.mode = 'normal'; HW.relayLeft = Math.max(HW.relayLeft, lt); ST.flags.remoteOpen = true; addEvent('Remote: open door', {cls: 'ok'});
+    say('Open door is a one-time command sent over port 8000. The controller turns relay 1 on for the Door Locked Time (' + lt + ' s), so the strike releases and then locks again. Nobody pulled the door, so the door contact stays closed.', 'Status', 'var(--ok)');
+  } else if (cmd === 'close') {
+    C.mode = 'normal'; HW.relayLeft = 0; addEvent('Remote: close door', {cls: 'info'});
+    say('Close door locks the door now: relay 1 turns off and the strike locks. It also ends a Remain open or Remain closed state.', 'Status', 'var(--cbt-sky)');
+  } else if (cmd === 'remainOpen') {
+    C.mode = 'remainOpen'; addEvent('Normally open started', {cls: 'info'});
+    say('Remain open keeps relay 1 on, so the strike stays released and anyone can walk in, until you send another command. Card swipes are still logged. A door left like this is an open door: use it only when someone is watching the entrance.', 'Status', 'var(--warn)');
+  } else {
+    C.mode = 'remainClosed'; HW.relayLeft = 0; addEvent('Normally closed started', {cls: 'info'});
+    say('Remain closed keeps the strike locked. Even valid cards are refused until you send another command. People inside can still leave with the lever (free egress).', 'Status', 'var(--ctrl)');
+  }
+  const opening = cmd === 'open' || cmd === 'remainOpen';
+  anim(() => { const t = gsap.timeline(); t.call(() => { G.clear(); G.hi('pc', SKY); }); t.add(G.fly('net', label, SKY)); if (opening) { t.call(() => G.hi('relay', GREEN)); t.add(G.fly('strike', '12 V', GREEN)); } t.to({}, {duration: 1}); t.call(() => G.clear()); });
+  after();
+}
+ACT.acOpen = () => anti('open'); ACT.acClose = () => anti('close'); ACT.acRemainOpen = () => anti('remainOpen'); ACT.acRemainClosed = () => anti('remainClosed');
+ACT.evMore = () => openTab('ev');
+
+// tab 8: access control events
+function paneEv() {
+  let h = '<h3>Access control event information <span class="ro" style="font-weight:400">(' + ST.events.length + ', newest first)</span></h3>';
+  if (!online()) h += '<p class="say">No device is Online, so new events cannot arrive.</p>';
+  h += '<div class="tw"><table><thead><tr><th>No.</th><th>Event type</th><th>Card holder</th><th>Card No.</th><th>Event time</th><th>Event source</th><th>Direction</th></tr></thead><tbody>';
+  if (!ST.events.length) h += '<tr><td colspan="7" class="empty">No events yet. Present a card on the test bench.</td></tr>';
+  ST.events.forEach(e => { h += '<tr><td>' + e.n + '</td><td class="ev-' + e.cls + '">' + esc(e.type) + (e.note ? '<span class="evnote">' + esc(e.note) + '</span>' : '') + '</td><td>' + esc(e.holder) + '</td><td>' + esc(e.no) + '</td><td style="white-space:nowrap">' + esc(e.time).replace(' ', '<br>') + '</td><td>' + esc(e.src) + '</td><td>' + esc(e.dir) + '</td></tr>'; });
+  return h + '</tbody></table></div>';
+}
+
+// ---- the work order checklist ----
+const TASKS = {
+  ctrl: ['Add the controller', 'Staff entrance, Access Controller_DS-K2601, TCP/IP, 192.168.10.64, port 8000, Dial-up 1, user admin. It must show Online.'],
+  door: ['Set Door_1 and download it', 'Door Magnetic Remain Closed (the contact is normally closed), Exit Button Type Remain Open (the button is normally open), Door Locked Time 5 s, Door Open for Disabled Person 15 s, Door Open Timeout 10 s. Edit, then Hardware Parameters Downloading.'],
+  depts: ['Add the departments', 'Clinical and Front desk, under Default.'],
+  persons: ['Add the people', 'Ana Pérez and Marta Sosa in Front desk, Luis Romero in Clinical.'],
+  cards: ['Add and issue the cards', 'Add cards 10045 to 10047 as blank cards (Bulk Adding works), then issue each one to its owner.'],
+  week: ['Build the week plan', 'Office hours: Monday to Friday 07:00 to 19:00, Saturday 08:00 to 13:00, Sunday closed.'],
+  tpl: ['Make the schedule template', 'Template Office hours with the Office hours week plan. A holiday group is optional (the office closes on Thanksgiving, November 26, 2026).'],
+  perm: ['Give the permission', 'Both departments (or each person) on Staff entrance_Door1 with the Office hours template.'],
+  dl: ['Download the permission', 'Start Downloading, choose the controller, OK. Download again after every change.'],
+  t_ok: ['Test a granted card', 'After the download, present a card inside office hours. Expect Granted.'],
+  t_sched: ['Test outside the schedule', 'For example Saturday 14:00. Expect Denied: outside schedule.'],
+  t_nodl: ['Test before downloading', "Before task 9, present Ana's card once. Write down what the event list shows and why."],
+  t_ac: ['Use anti-control', 'Status monitor: Open door once and watch the strike on the board.'],
+  t_fault: ['Fault drill', 'Set Door Magnetic to Remain Open, download, wait for the Door open timeout event, then put it back and download again.']
+};
+function renderScore() {
+  const sc = scoreNow(), c = ST.cfg;
+  const tried = {ctrl: c.devices.length > 0, door: ST.ctrl.doorDl, depts: c.depts.length > 1, persons: c.persons.length > 0, cards: c.cards.length > 0, week: c.weekPlans.length > 2, tpl: c.templates.length > 1, perm: c.perms.length > 0, dl: !!ST.ctrl.perm, t_fault: !!ST.flags.magFault};
+  const li = it => { const T0 = TASKS[it.id], done = it.pts === it.max, part = it.pts > 0 && !done;
+    return '<li class="' + (done ? 'done' : part ? 'part' : '') + '"><span class="mk" aria-hidden="true">' + (done ? '✓' : part ? '•' : '') + '</span><span class="tt">' + T0[0] + '</span><span class="pt">' + it.pts + ' / ' + it.max + '</span><span class="td">' + esc(T0[1]) + '</span>' +
+      (!done && (part || tried[it.id]) && it.tip ? '<span class="tip">' + esc(it.tip) + '</span>' : '') + '</li>'; };
+  $('#tasksA').innerHTML = sc.items.filter(i => !/^t_/.test(i.id)).map(li).join('');
+  $('#tasksB').innerHTML = sc.items.filter(i => /^t_/.test(i.id)).map(li).join('');
+  $('#scoreBig').textContent = sc.total;
+  $('#ctx').textContent = 'Score ' + sc.total + ' of 100';
+  renderTabs();
+}
+
+// ---- wiring ----
+const stage = $('#stage');
+try { G = Graphics3D(stage); } catch (e) { console.error(e); G = null; }
+if (!G) { $('#nogl').hidden = false; document.querySelectorAll('.views').forEach(v => v.hidden = true); G = Graphics2D(stage); }
+G.onPick = k => { $('#info').innerHTML = INFO[k] || ''; };
+if (stage.clientWidth < 700) { follow = false; $('#follow').classList.remove('on'); $('#follow').setAttribute('aria-pressed', 'false'); }
+$('#winTabs').addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) openTab(b.dataset.tab); });
+$('#winTabs').addEventListener('keydown', e => {
+  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+  const i = TABS.findIndex(t => t.id === UI.tab), n = (i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length;
+  openTab(TABS[n].id); const b = document.getElementById('tab-' + TABS[n].id); if (b) b.focus();
+});
+const body = $('#winBody');
+body.addEventListener('click', e => {
+  const cell = e.target.closest('.wp .c');
+  if (cell) { if (mouseCell) { mouseCell = false; return; } if (cell.disabled) return; const d = +cell.dataset.d, hr = +cell.dataset.h; setCell(d, hr, !cellFull(wpCur(), d, hr)); UI.wpDay = d; cellsChanged(); return; }
+  const a = e.target.closest('[data-act]'); if (!a || a.disabled) return;
+  const f = ACT[a.dataset.act]; if (f) f(a);
+});
+body.addEventListener('change', e => { if (e.target.id === 'dDev') { UI.doorDev = e.target.value; renderPane(); } });
+body.addEventListener('pointerdown', e => {
+  const cell = e.target.closest('.wp .c'); if (!cell || cell.disabled || e.pointerType !== 'mouse') return;
+  const d = +cell.dataset.d, hr = +cell.dataset.h; paint = !cellFull(wpCur(), d, hr); mouseCell = true; setCell(d, hr, paint); paintGrid(); e.preventDefault();
+});
+body.addEventListener('pointerover', e => { if (paint === null) return; const cell = e.target.closest('.wp .c'); if (!cell || cell.disabled) return; setCell(+cell.dataset.d, +cell.dataset.h, paint); paintGrid(); });
+document.addEventListener('pointerup', () => { if (paint !== null) { paint = null; cellsChanged(); } setTimeout(() => { mouseCell = false; }, 0); });
+body.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'radio') { const p = e.target.closest('.dlg'); const pri = p && p.querySelector('.b2.pri'); if (pri) { e.preventDefault(); pri.click(); } } });
+
+function showDay() { const d = AC.weekday($('#tDate').value); $('#tDay').textContent = d < 0 ? 'Pick a date' : AC.DAYS[d] + (($('#tDate').value === '2026-11-26') ? ', Thanksgiving' : ''); }
+$('#tDate').addEventListener('input', showDay); $('#tDate').addEventListener('change', showDay);
+document.querySelectorAll('.presets button').forEach(b => b.addEventListener('click', () => { const [d, t] = b.dataset.preset.split(' '); $('#tDate').value = d; $('#tTime').value = t; showDay(); }));
+$('#btnPresent').addEventListener('click', () => {
+  const no = $('#tCard').value, date = $('#tDate').value, time = ($('#tTime').value || '').slice(0, 5);
+  if (AC.weekday(date) < 0 || isNaN(AC.toMin(time))) { say('Pick a date and a time on the test bench first.', 'Test bench', 'var(--ctrl)'); return; }
+  startSeq(cardSeq(no, date, time));
+});
+$('#btnExit').addEventListener('click', () => startSeq(exitSeq()));
+$('#btnHold').addEventListener('click', () => {
+  HW.hold = !HW.hold; $('#btnHold').setAttribute('aria-pressed', HW.hold); $('#btnHold').classList.toggle('on', HW.hold); $('#btnHold').textContent = HW.hold ? 'Let the door close' : 'Hold door open';
+  if (HW.hold) { HW.phys = true; say('Someone props the staff entrance open from inside (the lever always opens it from inside). Watch the board: after the Door Open Timeout of ' + ST.ctrl.door.timeout + ' s, the controller raises a Door open timeout alarm.', 'Test bench', 'var(--warn)'); }
+  else { if (!HW.walk) HW.phys = false; say('The door swings shut and the door contact closes again. The alarm clears.', 'Test bench', 'var(--cbt-sky)'); }
+  sync();
+});
+$('#btnSound').addEventListener('click', () => { sound = !sound; $('#btnSound').setAttribute('aria-pressed', sound); $('#btnSound').classList.toggle('on', sound); $('#btnSound').textContent = sound ? 'Sound on' : 'Sound off'; });
+let resetArm = 0;
+$('#btnResetLab').addEventListener('click', () => {
+  if (Date.now() - resetArm > 4000) { resetArm = Date.now(); $('#btnResetLab').textContent = 'Press again to erase everything'; setTimeout(() => { $('#btnResetLab').textContent = 'Start the lab over'; }, 4000); return; }
+  resetArm = 0; $('#btnResetLab').textContent = 'Start the lab over';
+  if (SEQ && tl) { tl.kill(); tl = null; } stop(); SEQ = null; S.step = 0; hist = [];
+  ST = AC.fresh(); UI = freshUI(); Object.assign(HW, {phys: false, relayLeft: 0, walk: null, hold: false, openFor: 0, alarm: false, pOpen: false, exitHeld: false});
+  $('#btnHold').setAttribute('aria-pressed', 'false'); $('#btnHold').classList.remove('on'); $('#btnHold').textContent = 'Hold door open';
+  CTRLWORD = 'READY'; CTRLCOLOR = ''; READERWORD = 'READY'; G.clearPackets(); G.clear(); G.led(IDLE); $('#lastRes').textContent = 'No test yet.';
+  setPhase(null); say('The lab is empty again: no devices, people, cards, or permissions. Start with tab 1.', 'Ready', 'var(--silk-dim)');
+  after(); render();
+});
+$('#btnStep').addEventListener('click', () => { stop(); stepFwd(true); });
+$('#btnRun').addEventListener('click', () => running ? stop() : run());
+$('#btnBack').addEventListener('click', back);
+$('#speed').addEventListener('input', e => { speed = SPEEDS[+e.target.value]; $('#speedOut').textContent = speed + '×'; if (tl) tl.timeScale(speed); });
+document.querySelectorAll('.views button[data-view]').forEach(b => b.addEventListener('click', () => { document.querySelectorAll('.views button[data-view]').forEach(x => x.classList.toggle('on', x === b)); G.view(b.dataset.view); }));
+$('#follow').addEventListener('click', () => { follow = !follow; $('#follow').classList.toggle('on', follow); $('#follow').setAttribute('aria-pressed', follow); });
+document.addEventListener('keydown', e => {
+  const t = e.target && e.target.tagName; if (t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA' || t === 'BUTTON') return;
+  if (e.key === ' ') { e.preventDefault(); stop(); stepFwd(true); } else if (e.key === 'b' || e.key === 'B') back(); else if (e.key === 'r' || e.key === 'R') $('#btnRun').click();
+});
+
+evalInputs(true); showDay(); renderTabs(); renderPane(); renderScore(); sync(); render();
+setInterval(tick, 500);
+})();
+</script>
+</body>
+</html>

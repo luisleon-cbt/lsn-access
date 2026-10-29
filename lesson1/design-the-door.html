@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design the door</title>
+<meta name="description" content="LSN-ACCESS Lesson 1 interactive: Ten doors at Palmetto Dental Group. Pick the lock, the reader, and the layout that keep people safe and keep the wrong people out.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Figtree:wght@400;500;600;700&family=Red+Hat+Mono:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/renderers/CSS2DRenderer.js"></script>
+<style>
+  /* ===== CBT "Shield bench" theme v1 (quality reference: templates/theme/reference/tiny-machine-lab.html). Paste as the first block of every page's <style>. ===== */
+  :root{
+    /* CBT brand */
+    --cbt-navy:#283068; --cbt-sky:#38B0E0; --cbt-gold:#E0B840; --cbt-gray:#989890; --cbt-navy-dark:#1B2150;
+    /* dark bench (navy board, gold traces) */
+    --board:#141a45; --board-deep:#0b0f2b; --panel:#10163b; --panel-2:#171f4f; --line:#2a3470; --line-2:#3a4690;
+    --silk:#eef1fa; --silk-dim:#aeb3c9; --copper:#E0B840;
+    /* signal colors: each course plan says what they mean; defaults below */
+    --addr:#E0B840; --data:#38B0E0; --ctrl:#F0786A; --alu:#6FD49B; --oper:#A9B4FF; --out:#9FE7FF; --led:#6FD49B;
+    --ok:#6FD49B; --bad:#F0786A; --warn:#E0B840; --neon:#39ff14;
+    --font-mono:"Red Hat Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --font-body:"Figtree","Helvetica Neue",Arial,sans-serif;
+    --font-display:"Archivo","Arial Black",Arial,sans-serif;
+    --mono:var(--font-mono); --sans:var(--font-body); --display:var(--font-display);
+    --r:6px; --lab:10px;
+    /* legacy names, mapped to the dark theme */
+    --ink:#eef1fa; --ink-2:#cdd2e6; --muted:#aeb3c9; --bg:#0b0f2b; --card:#10163b; --edge:#2a3470; --edge-2:#3a4690; --dim:#aeb3c9; --silk-2:#cdd2e6;
+    --code-bg:#070a22; --code-ink:#9FE7FF;
+    --net-blue:#38B0E0; --net-green:#6FD49B; --net-amber:#E0B840; --net-purple:#A9B4FF; --net-teal:#5fe0c8;
+    --ok-soft:rgba(111,212,155,.10); --bad-soft:rgba(240,120,106,.10); --warn-soft:rgba(224,184,64,.10);
+    --radius:6px; --shadow:none;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  html{background:var(--board-deep)}
+  [hidden]{display:none!important}
+  body{color:var(--silk);font-family:var(--font-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
+    background:radial-gradient(1200px 600px at 30% -10%,#1d2a6e 0%,transparent 60%),var(--board-deep)}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(135deg,rgba(224,184,64,.035) 0 2px,transparent 2px 26px);-webkit-mask:radial-gradient(900px 600px at 100% 100%,#000,transparent 70%);mask:radial-gradient(900px 600px at 100% 100%,#000,transparent 70%)}
+  button,input,select,textarea{font:inherit;color:inherit}
+  a{color:var(--data)}
+  :focus-visible{outline:2px solid var(--addr);outline-offset:2px}
+  /* brand bar: white, CBT logo (shield and wordmark), navy rule with a gold underline like the shield */
+  .topbar{position:relative;z-index:5;background:#fff;border-bottom:4px solid var(--cbt-navy);box-shadow:0 3px 0 var(--cbt-gold)}
+  .topbar-inner{max-width:none;margin:0 auto;padding:8px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand-logo{display:block;flex:none;height:40px}
+  .brand-logo img{height:40px;width:auto;display:block}
+  .crumb{font-size:13px;color:#5d6178;letter-spacing:.02em;border-left:1px solid #DADDEA;padding-left:16px}
+  .crumb b{color:var(--cbt-navy);font-weight:700}
+  .crumb a{color:var(--cbt-navy)}
+  /* page mode (challenges and pages with a scrolling layout) */
+  main,.wrap{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:26px 16px 36px}
+  .hero{margin:0 0 20px}
+  .eyebrow{display:block;margin:0;font:600 10.5px var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--cbt-sky);background:none;padding:0}
+  h1{margin:6px 0 8px;font-family:var(--font-display);font-weight:800;font-stretch:118%;font-size:clamp(24px,3.4vw,36px);line-height:1.15;letter-spacing:-.01em;text-wrap:balance;color:var(--silk)}
+  h1 .num{color:var(--cbt-gold)}
+  h2{margin:0 0 10px;font-family:var(--font-display);font-weight:700;font-stretch:110%;font-size:14px;letter-spacing:.02em;color:var(--silk)}
+  h2 small,h3 small{color:var(--silk-dim);font-weight:400}
+  h3{margin:0 0 8px;font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:.02em;color:var(--silk)}
+  .lede{margin:0;color:var(--silk-dim);font-size:15px;max-width:68ch}
+  .muted{color:var(--silk-dim)}
+  .spec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .spec div{background:var(--panel);padding:9px 11px}
+  .spec b{display:block;font:600 15px var(--font-mono);color:var(--silk)}
+  .spec span{font-size:12px;color:var(--silk-dim)}
+  @media(min-width:960px){.hero.split{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;align-items:end}}
+  .card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0;color:var(--silk);
+    background-image:radial-gradient(rgba(238,241,250,.035) 1px,transparent 1px);background-size:14px 14px}
+  .card[data-ref]::after{content:attr(data-ref);position:absolute;top:9px;right:12px;font:500 9.5px var(--font-mono);letter-spacing:.12em;color:rgba(174,179,201,.55)}
+  .grid{display:grid;gap:14px}
+  .grid>*{min-width:0}
+  @media(min-width:900px){.grid.two{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}}
+  details,details.howto{border:1px solid var(--line);border-radius:5px;background:var(--panel)}
+  details.howto{margin:0 0 16px}
+  summary{cursor:pointer;padding:10px 12px;font:500 12.5px var(--font-mono);color:var(--silk)}
+  details>*:not(summary){margin-left:12px;margin-right:12px}
+  details.howto ol,details.howto ul{margin:4px 12px 12px;padding-left:20px;color:var(--silk-dim)}
+  details.howto li{margin-bottom:5px}
+  details.howto li::marker{color:var(--copper)}
+  .btn{border:1px solid var(--line);background:var(--panel-2);border-radius:5px;padding:9px 12px;font:500 12px var(--font-mono);color:var(--silk);cursor:pointer;transition:border-color .2s,background .2s;display:inline-flex;gap:6px;align-items:center;justify-content:center}
+  .btn:hover:not(:disabled){border-color:var(--copper)}
+  .btn.primary,.btn.go{background:var(--copper);border-color:var(--copper);color:#1a1205;font-weight:600}
+  .btn.primary:hover:not(:disabled),.btn.go:hover:not(:disabled){background:#ecc85c}
+  .btn[aria-pressed="true"],.btn.on{border-color:var(--data);color:var(--data)}
+  .btn:disabled,.btn[disabled]{opacity:.4;cursor:not-allowed}
+  input[type=text],input[type=number],select,textarea{background:var(--board-deep);border:1px solid var(--line);border-radius:5px;padding:8px 10px;font:500 13.5px var(--font-mono);color:var(--silk);min-width:0}
+  input[type=checkbox],input[type=radio],input[type=range]{accent-color:var(--copper)}
+  .mono,code,kbd{font-family:var(--font-mono);font-size:.92em}
+  code{background:rgba(238,241,250,.07);padding:1px 5px;border-radius:3px}
+  .cli{background:var(--code-bg);color:var(--code-ink);font:500 12.5px/1.6 var(--font-mono);border-radius:5px;padding:12px 14px;overflow:auto;white-space:pre;border:1px solid var(--line)}
+  .pill{display:inline-block;font:500 10.5px var(--font-mono);letter-spacing:.06em;padding:3px 8px;border-radius:3px;background:var(--panel-2);color:var(--silk-dim);border:1px solid var(--line)}
+  .feedback{border-radius:5px;padding:11px 13px;margin-top:12px;font-size:14.5px;color:var(--silk)}
+  .feedback.ok{background:rgba(111,212,155,.08);border:1px solid rgba(111,212,155,.45)}
+  .feedback.bad{background:rgba(240,120,106,.08);border:1px solid rgba(240,120,106,.45)}
+  .feedback.info{background:rgba(56,176,224,.08);border:1px solid rgba(56,176,224,.45)}
+  .score{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font:500 12px var(--font-mono);color:var(--silk-dim)}
+  .score .big{font:800 36px/1 var(--font-display);font-stretch:118%;color:var(--silk);font-variant-numeric:tabular-nums}
+  table,table.data{border-collapse:collapse;width:100%;font:500 12px var(--font-mono);font-variant-numeric:tabular-nums}
+  th,table.data th{font-weight:500;color:var(--silk-dim);text-align:left;font-size:10.5px;letter-spacing:.04em;padding:7px 8px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+  td,table.data td{padding:4px 8px;border-bottom:1px solid rgba(42,52,112,.55)}
+  .scroll-x,.memwrap{overflow-x:auto}
+  .memwrap{border:1px solid var(--line);border-radius:5px}
+  svg text{font-family:var(--font-mono)}
+  /* step-by-step explanation (page mode and app mode) */
+  .stepper{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  .caption,.narr{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:13px 15px;color:var(--silk)}
+  .caption{margin-top:12px;min-height:4.4em}
+  .caption .t{font:500 11px var(--font-mono);letter-spacing:.1em;color:var(--cap,var(--copper));margin-bottom:6px;text-transform:uppercase}
+  .narr{display:flex;flex-direction:column;gap:8px}
+  .narr-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font:400 11px var(--font-mono);color:var(--silk-dim)}
+  .ptag{display:inline-flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.1em;color:var(--silk)}
+  .ptag::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--pc,var(--silk-dim));box-shadow:0 0 8px var(--pc,transparent)}
+  .narr p{margin:0;font-size:15.5px;line-height:1.55;min-height:4.6em}
+  .controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .controls .btn{padding:10px 6px}
+  .speed{display:flex;align-items:center;gap:12px;font:400 11.5px var(--font-mono);color:var(--silk-dim)}
+  .speed input{flex:1;min-width:0}
+  .speed output{color:var(--silk);width:3.5em;text-align:right;font-variant-numeric:tabular-nums}
+  .hint{margin:0;font-size:12px;color:var(--silk-dim)}
+  .rail{display:flex;gap:2px;margin:4px 0 12px;padding:4px;list-style:none;background:rgba(11,15,43,.78);border:1px solid var(--line);border-radius:6px}
+  .rail>div,.rail>li{flex:1;text-align:center;font:500 11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;padding:6px 8px;border-radius:4px;color:var(--silk-dim);transition:background .25s,color .25s}
+  .rail>div small{display:block;font:400 9.5px var(--font-body);letter-spacing:.02em;text-transform:none;margin-top:2px;opacity:.85}
+  .rail>.on{background:var(--c,var(--copper));color:#1a1205}
+  .rail>.done{color:var(--c,var(--copper))}
+  /* live state */
+  .regs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .reg{border:1px solid var(--line);border-radius:5px;padding:9px 11px;transition:border-color .3s,background .3s;min-width:0}
+  .reg.kv{display:grid;grid-template-columns:1fr auto;gap:1px 8px;align-items:baseline}
+  .reg.on,.reg.flash{border-color:var(--hc,var(--copper));background:rgba(224,184,64,.08)}
+  .reg .rn{font:600 12px var(--font-mono)}
+  .reg .rv{font:600 17px var(--font-mono);text-align:right;font-variant-numeric:tabular-nums}
+  .reg .rf{font-size:11.5px;color:var(--silk-dim)}
+  .reg .rs{font:400 10.5px var(--font-mono);color:var(--silk-dim);text-align:right;font-variant-numeric:tabular-nums}
+  .reg.wide{grid-column:1/-1}
+  .reg .n{display:flex;justify-content:space-between;align-items:baseline;font:600 12px var(--font-mono);color:var(--silk)}
+  .reg .n b{font:600 17px var(--font-mono);font-variant-numeric:tabular-nums}
+  .bits{grid-column:1/-1;display:grid;grid-template-columns:repeat(var(--nb,8),1fr);gap:4px;margin-top:8px}
+  .bit{display:flex;flex-direction:column;align-items:center;gap:3px;font:400 9.5px var(--font-mono);color:var(--silk-dim)}
+  .bit i{width:100%;height:16px;border-radius:2px;background:#1a2350;border:1px solid var(--line);transition:background .25s,box-shadow .25s}
+  .bit.one i{background:var(--led);border-color:var(--led);box-shadow:0 0 8px rgba(111,212,155,.55)}
+  .ledbits{display:flex;gap:4px;margin:6px 0 2px;flex-wrap:wrap}
+  .ledbits i{width:16px;height:16px;border-radius:2px;background:#1a2350;border:1px solid var(--line);font:600 9px/14px var(--font-mono);font-style:normal;color:#4a5490;text-align:center}
+  .ledbits i.on{background:var(--led);border-color:var(--led);color:#06220f;box-shadow:0 0 8px rgba(111,212,155,.55)}
+  .tape{display:flex;flex-wrap:wrap;gap:4px;min-height:34px;align-content:flex-start}
+  .tape span{font:600 13px var(--font-mono);color:var(--out);background:#0f1c44;border:1px solid #2a4a7a;border-radius:3px;padding:3px 7px;font-variant-numeric:tabular-nums}
+  .tape em{font-style:normal;font-size:12px;color:var(--silk-dim)}
+  .notice{margin:0;padding-left:18px;color:var(--silk-dim);font-size:13.5px;display:flex;flex-direction:column;gap:6px}
+  .notice li::marker{color:var(--copper)}
+  .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font:400 10.5px var(--font-mono);color:var(--silk-dim);letter-spacing:.04em}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:16px;height:3px;border-radius:2px;background:var(--c);box-shadow:0 0 8px var(--c)}
+  /* app mode: the 3D board fills the left, a control rail sits on the right (stacks under the board on phones) */
+  .app{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,410px);height:calc(100vh - 55px);min-height:560px}
+  .stage{position:relative;min-width:0;min-height:320px;overflow:hidden;background:radial-gradient(ellipse at 40% 38%,#1d2a6e 0%,var(--board-deep) 72%);touch-action:none}
+  .stage .gl{position:absolute;inset:0;display:block;z-index:1}
+  .stage .labels{position:absolute!important;top:0;left:0;z-index:2}
+  .stage .flat{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+  .nogl{position:absolute;left:0;right:0;top:0;padding:7px 12px;text-align:center;color:var(--silk-dim);font-size:12px;z-index:4;background:rgba(11,15,43,.9);border-bottom:1px solid var(--line)}
+  .stage:has(.nogl:not([hidden])) .hud-top{top:44px}
+  .stage:has(.nogl:not([hidden])) .flat{top:34px;height:calc(100% - 34px)}
+  .hud{position:absolute;z-index:3;pointer-events:none;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .hud button,.hud a{pointer-events:auto}
+  .hud-top{top:14px;left:16px;right:16px}
+  .hud-bottom{bottom:14px;left:16px;right:16px;justify-content:space-between;align-items:flex-end}
+  .hud .phases,.hud .ticks,.hud .legend,.hud .views{background:rgba(11,15,43,.78);border:1px solid var(--line);border-radius:6px;backdrop-filter:blur(6px)}
+  .phases{list-style:none;margin:0;padding:4px;display:flex;gap:2px}
+  .phases li{font:500 11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border-radius:4px;color:var(--silk-dim);transition:background .25s,color .25s}
+  .phases li.on{background:var(--c,var(--copper));color:#1a1205}
+  .ticks{font:400 11px var(--font-mono);color:var(--silk-dim);padding:9px 10px;font-variant-numeric:tabular-nums}
+  .ticks b{color:var(--silk);font-weight:600}
+  .hud .legend{padding:8px 12px}
+  .views{display:flex;gap:2px;padding:4px}
+  .views button{border:0;background:transparent;font:400 11px var(--font-mono);padding:6px 10px;border-radius:4px;color:var(--silk-dim);cursor:pointer}
+  .views button:hover{color:var(--silk)}
+  .views button.on{background:var(--panel-2);color:var(--silk)}
+  .credit{flex-basis:100%;margin:2px 0 0 2px;font:600 14px var(--font-mono);letter-spacing:.08em;color:var(--neon);text-shadow:0 0 4px var(--neon),0 0 12px rgba(57,255,20,.75),0 0 26px rgba(57,255,20,.45)}
+  .tag,.stage3d .label3d{pointer-events:none;display:flex;flex-direction:column;align-items:center;font-family:var(--font-mono);line-height:1.1;text-align:center;color:var(--silk);text-shadow:0 1px 2px rgba(0,0,0,.8)}
+  .tag .nm{font-size:calc(var(--lab) * .85);letter-spacing:.1em;color:var(--silk-dim)}
+  .tag .vl{font-size:calc(var(--lab) * 1.3);font-weight:600;font-variant-numeric:tabular-nums}
+  .tag .sb{font-size:calc(var(--lab) * .72);color:var(--silk-dim);letter-spacing:.04em}
+  .tag .sb:empty{display:none}
+  .tag.on .nm{color:var(--silk)}
+  .tag.on .vl{color:#fff6d8}
+  .cell .nm{font-size:calc(var(--lab) * .75)}
+  .cell .vl{font-size:calc(var(--lab) * 1.15)}
+  .zone{pointer-events:none;font-family:var(--font-mono);font-size:calc(var(--lab) * .82);letter-spacing:.14em;text-transform:uppercase;color:var(--c,var(--silk-dim));opacity:.85;white-space:nowrap;text-align:center;line-height:1.3}
+  .lcd{pointer-events:none;font-family:var(--font-mono);font-weight:600;color:var(--out);font-size:calc(var(--lab) * 2);text-shadow:0 0 10px rgba(111,212,155,.8);font-variant-numeric:tabular-nums}
+  .pkt{pointer-events:none;font-family:var(--font-mono);font-size:calc(var(--lab) * 1.1);font-weight:700;color:#06120f;background:var(--c);padding:2px 6px;border-radius:3px;box-shadow:0 0 14px var(--c);white-space:nowrap}
+  .panel{min-width:0;overflow-y:auto;background:var(--panel);border-left:1px solid var(--line);padding:20px 18px 28px;display:flex;flex-direction:column;gap:22px;
+    background-image:radial-gradient(rgba(238,241,250,.035) 1px,transparent 1px);background-size:14px 14px}
+  .panel h1{font-size:26px;margin:4px 0 6px}
+  /* a Lab3D stage inside a card (page mode challenges) */
+  .card .stage{width:100%;aspect-ratio:16/10;min-height:0;border-radius:6px;border:1px solid var(--line)}
+  @media(max-width:640px){.card .stage{aspect-ratio:4/3}}
+  .progress{display:flex;gap:3px;margin:10px 0}
+  .progress i{flex:1;height:6px;border-radius:2px;background:var(--line)}
+  .progress i.ok{background:var(--ok)}.progress i.part{background:var(--warn)}.progress i.bad{background:var(--bad)}.progress i.now{background:var(--cbt-sky)}
+  .opts{display:grid;gap:8px;margin-top:10px}
+  .opts button{text-align:left;padding:11px 13px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--silk);font:500 14.5px var(--font-body);cursor:pointer}
+  .opts button:hover:not(:disabled){border-color:var(--cbt-gold)}
+  .opts button.right{border-color:var(--ok);background:rgba(111,212,155,.10)}
+  .opts button.wrong{border-color:var(--bad);background:rgba(240,120,106,.10)}
+  /* the older make3D stage (page mode) */
+  .stage3d{position:relative;width:100%;aspect-ratio:16/10;min-height:280px;border-radius:6px;overflow:hidden;touch-action:none;background:radial-gradient(ellipse at 40% 38%,#1d2a6e 0%,var(--board-deep) 72%);border:1px solid var(--line)}
+  @media(max-width:640px){.stage3d{aspect-ratio:4/3}}
+  .stage3d canvas{position:absolute;inset:0;display:block;width:100%!important;height:100%!important}
+  .stage3d .fallback{position:absolute;left:0;right:0;bottom:0;padding:6px 10px;font-size:12px;color:var(--silk-dim);background:rgba(11,15,43,.85);text-align:center}
+  .stage3d .label3d{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:11px;font-weight:600}
+  .stage3d .label3d.pkt{color:#06120f;text-shadow:none;background:var(--c,currentColor);padding:2px 6px;border-radius:3px}
+  footer.foot{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:16px;color:var(--silk-dim);font-size:12.5px;border-top:1px solid var(--line)}
+  footer.foot .byline,.byline{margin-top:4px;font:600 13px var(--font-mono)!important;letter-spacing:.08em;color:var(--neon)!important;text-shadow:0 0 4px var(--neon),0 0 12px rgba(57,255,20,.6)}
+  .reveal{animation:rise .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*80ms)}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @media(max-width:860px){
+    .app .stage .zoomctl{top:56px;right:10px;transform:none;flex-direction:row}
+    .app{grid-template-columns:1fr;height:auto}
+    .app .stage{height:62vh;min-height:360px}
+    .panel{border-left:0;border-top:1px solid var(--line);overflow:visible}
+  }
+  @media(max-width:520px){
+    .hud .legend{font-size:9.5px;gap:3px 10px}
+    .phases li{padding:5px 7px;font-size:10px}
+    .controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  /* ===== end of theme ===== */
+
+  /* page-specific CSS below (page mode challenge) */
+  .qhead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;padding-right:70px}
+  .qhead h2{margin:0}
+  .qtext{margin:0 0 6px;font-size:15.5px;line-height:1.55}
+  .opts button{display:flex;gap:10px;align-items:flex-start;line-height:1.45}
+  .opts button .key{flex:none;width:22px;height:22px;border-radius:4px;border:1px solid var(--line-2);display:inline-flex;align-items:center;justify-content:center;font:600 11px var(--font-mono);color:var(--silk-dim);margin-top:1px}
+  .opts button.sel{border-color:var(--cbt-sky);background:rgba(56,176,224,.10)}
+  .opts button.sel .key{border-color:var(--cbt-sky);color:var(--cbt-sky)}
+  .opts button.right .key{border-color:var(--ok);color:var(--ok)}
+  .opts button.wrong .key{border-color:var(--bad);color:var(--bad)}
+  .opts button:disabled{cursor:default}
+  .feedback .best{margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(238,241,250,.12)}
+  .doorname{margin:-4px 0 8px;font-size:13.5px}
+  .doorname b{color:var(--cbt-gold);font-weight:600}
+  .boardlegend{margin-top:10px}
+  .howto-note{margin:0 12px 12px;font-size:13.5px}
+  #resTable td{vertical-align:top;padding:7px 8px;font:500 13px/1.4 var(--font-body)}
+  #resTable td:first-child,#resTable td.pts{font-family:var(--font-mono)}
+  #resTable tr.tot td{white-space:nowrap}
+  #resTable .bestcell{display:block;font-size:11.5px;margin-top:2px}
+  #resTable td.pts{white-space:nowrap;font-weight:600}
+  #resTable td.pts.ok{color:var(--ok)} #resTable td.pts.part{color:var(--warn)} #resTable td.pts.bad{color:var(--bad)}
+  #resTable tr.tot td{border-bottom:0;padding-top:10px}
+  @media(max-width:520px){.qhead{padding-right:0}.qhead h2{padding-right:70px}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand-logo" href="https://www.cbt.edu" target="_blank" rel="noopener" aria-label="CBT Technology Institute"><img src="https://raw.githubusercontent.com/luisleon-cbt/items/main/cbt-logo-mark.png" alt="CBT Technology Institute"></a>
+    <div class="crumb"><a href="../index.html"><b>LSN-ACCESS</b> Access control systems</a> · Lesson 1 · Interactive B</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero split reveal" style="--i:0">
+    <div><span class="eyebrow">LSN-ACCESS · Lesson 1 · Challenge</span><h1>Design the door</h1><p class="lede">Ten doors at Palmetto Dental Group. Pick the lock, the reader, and the layout that keep people safe and keep the wrong people out.</p></div>
+    <div class="spec"><div><b id="specRounds">10</b><span>rounds, 10 points each</span></div><div><b>100</b><span>points</span></div><div><b>Partial</b><span>credit where fair</span></div><div><b>Shuffled</b><span>every attempt</span></div></div>
+  </section>
+  <details class="howto reveal" style="--i:1"><summary>How this challenge works</summary>
+    <ol><li>Read the situation. The board shows the door, and the part marked ? is the one you choose.</li><li>Pick an answer and press Check to see your points and why.</li><li>Press Play (or Step and Back) to watch the best design work on the board: green when your answer was the best, coral when it needs review.</li><li>Finish all ten rounds, review the results table, and try again.</li></ol>
+    <p class="muted howto-note">Words to know: fail safe means the lock opens when power is lost; fail secure means it stays locked. REX means request to exit. The AHJ (authority having jurisdiction) is the official, often the fire marshal, who approves the design under the local building and fire code.</p>
+  </details>
+  <div class="grid two">
+    <section class="card reveal" style="--i:2" data-ref="U1 · ROUND">
+      <div class="progress" id="prog"></div>
+      <div class="qhead"><h2 id="qTitle">Round 1</h2><span class="pill" id="qTopic"></span></div>
+      <p id="qText" class="qtext"></p>
+      <div class="opts" id="opts"></div>
+      <div class="stepper"><button class="btn primary" id="btnCheck" type="button">Check</button><button class="btn" id="btnNext" type="button" disabled>Next round</button></div>
+      <div id="fb" aria-live="polite"></div>
+    </section>
+    <aside class="card reveal" style="--i:3" data-ref="U2 · BOARD">
+      <h2>Watch it on the board</h2>
+      <p class="doorname"><span class="muted">Door:</span> <b id="doorName"></b></p>
+      <div class="stage" id="stage"><div class="nogl" id="nogl" hidden>Flat board (no 3D here). Same steps.</div></div>
+      <div class="legend boardlegend"><span style="--c:#E0B840"><i></i>12 V power</span><span style="--c:#38B0E0"><i></i>card data</span><span style="--c:#A9B4FF"><i></i>inputs</span><span style="--c:#9FE7FF"><i></i>network</span><span style="--c:#6FD49B"><i></i>your answer was best</span><span style="--c:#F0786A"><i></i>review</span></div>
+      <div class="caption" id="cap" aria-live="polite"><div class="t" id="capT">Ready</div><p id="capB" style="margin:0">After you check an answer, press Play to see why.</p></div>
+      <div class="stepper"><button class="btn" id="btnBack" type="button" disabled>Back</button><button class="btn" id="btnStep" type="button" disabled>Step</button><button class="btn go" id="btnPlay" type="button" disabled>Play the explanation</button></div>
+      <div class="score" style="margin-top:14px"><span class="big" id="score">0</span><span>points so far, out of 100</span></div>
+    </aside>
+  </div>
+  <section class="card reveal" style="--i:4;margin-top:14px" id="results" hidden data-ref="U3 · RESULTS">
+    <h2>Your results</h2>
+    <p class="muted" id="resNote" style="margin:0 0 10px"></p>
+    <div class="scroll-x"><table class="data" id="resTable"></table></div>
+    <div class="stepper"><button class="btn primary" id="btnAgain" type="button">Try again</button></div>
+  </section>
+</main>
+<footer class="foot">CBT Technology Institute · Flagler Campus · LSN-ACCESS Access control systems<div class="byline">By Professor De Leon</div></footer>
+
+<script>
+(function () {
+"use strict";
+const hasGSAP = typeof window.gsap !== 'undefined';
+const $ = s => document.querySelector(s);
+// LAB3D START: CBT 3D kit (modeled on the professor's "Tiny Machine Lab" reference, in CBT colors: navy board, gold traces). Paste as one block.
+// Needs Three.js r147 (three.min.js), examples/js/controls/OrbitControls.js, examples/js/renderers/CSS2DRenderer.js and GSAP 3.12.5.
+// Returns null when any of them (or WebGL) is missing: then draw the 2D fallback.
+//
+// const lab = Lab3D(stageEl, {
+//   board: {w: 22.4, d: 13.6, cx: 0, cz: 0.2, silk: 'BAY-4  REV 1.0  ...', seed: 11},
+//   views: {overview: {pos: [0, 17, 14.5], tgt: [0, 0, 0.4], want: 1.55}, cpu: {...}},
+//   colors: {copper: '#E0B840'}, palette: {...}
+// });
+// lab.chip(key, {x, z, w, d, h, nm, body, metal, cell})  -> rec {g, mat, el, val, sub, h, key}
+// lab.silkRect(x0, x1, z0, z1)   lab.zone(text, x, z, color)   lab.label(html, cls, x, y, z, parent)
+// lab.busMat(color, {base, rest})  lab.trace([{x,z}...], lines, mat)  lab.glowBus(mat)
+// lab.fly([{x,z}...], text, color, {y, dur}) -> GSAP timeline (packet sphere + halo + pill label)
+// lab.hi(rec, color)  lab.clear()  lab.pop(rec)  lab.setView(name)  lab.zoom(factor)  lab.intro()  lab.onPick(fn)  lab.clearPackets()
+// Zoom buttons (+, -, FIT) and the + - 0 keys are added to the stage automatically (opts.zoomUI: false turns them off; opts.fitView picks the FIT view).
+function Lab3D(stage, opts) {
+  opts = opts || {};
+  const hasG = typeof window.gsap !== 'undefined';
+  if (!window.THREE || !THREE.OrbitControls || !THREE.CSS2DRenderer || !hasG) return null;
+  try { const t = document.createElement('canvas'); if (!(t.getContext('webgl') || t.getContext('experimental-webgl'))) return null; } catch (e) { return null; }
+  const T = THREE;
+  const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const B = Object.assign({w: 22.4, d: 13.6, cx: 0, cz: 0.2, silk: '', seed: 11}, opts.board || {});
+  // CBT palette (override any key with opts.palette)
+  const P = Object.assign({
+    boardA: '#1a2257', boardB: '#10163f', dots: 'rgba(238,241,250,0.04)', trace: '224,184,64', via: '#0a0e2a',
+    silkText: 'rgba(238,241,250,0.34)', edge: 0x0d1238, clear: 0x0b0f2b, sky: 0xdfe6ff, ground: 0x10163f, rim: 0x38b0e0,
+    chip: '#161a2e', cell: '#1c2138', pinDot: 0x7a809c, font: '"Red Hat Mono", ui-monospace, monospace',
+    uiBg: 'rgba(11,15,43,.82)', uiLine: '#2a3470', uiText: '#eef1fa', uiHover: '#171f4f', uiAccent: '#E0B840'
+  }, opts.palette || {});
+  const COPPER = (opts.colors && opts.colors.copper) || '#E0B840';
+
+  const renderer = new T.WebGLRenderer({antialias: true, powerPreference: 'high-performance'});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = T.sRGBEncoding;
+  renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+  renderer.setClearColor(P.clear, 0);
+  renderer.domElement.className = 'gl';
+  stage.prepend(renderer.domElement);
+  const labelR = new T.CSS2DRenderer();
+  labelR.domElement.className = 'labels';
+  renderer.domElement.after(labelR.domElement);
+
+  const scene = new T.Scene();
+  scene.fog = new T.Fog(P.clear, 34, 70);
+  const camera = new T.PerspectiveCamera(40, 1, 0.1, 200);
+  const controls = new T.OrbitControls(camera, labelR.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.46; controls.minDistance = 5; controls.maxDistance = 42;
+  controls.zoomSpeed = 1.1;
+  // keep the mouse wheel inside the 3D view: zoom the board, do not scroll the page
+  stage.addEventListener('wheel', e => e.preventDefault(), {passive: false});
+
+  scene.add(new T.HemisphereLight(P.sky, P.ground, 0.6));
+  const sun = new T.DirectionalLight(0xfff1dc, 1.0); sun.position.set(-7, 16, 9); sun.castShadow = true;
+  sun.shadow.mapSize.set(1536, 1536);
+  Object.assign(sun.shadow.camera, {left: -B.w / 2 - 2, right: B.w / 2 + 2, top: B.d / 2 + 2, bottom: -B.d / 2 - 2, near: 1, far: 44});
+  sun.shadow.bias = -0.0005; scene.add(sun);
+  const rim = new T.DirectionalLight(P.rim, 0.35); rim.position.set(12, 6, -10); scene.add(rim);
+
+  // board: a canvas texture with a dot grid, random copper traces, vias, mounting holes and silkscreen
+  function rng(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const cv = document.createElement('canvas'); cv.width = 2048; cv.height = Math.round(2048 * B.d / B.w);
+  function drawBoard() {
+    const g = cv.getContext('2d'), W = cv.width, H = cv.height, rnd = rng(B.seed);
+    const grd = g.createLinearGradient(0, 0, W, H); grd.addColorStop(0, P.boardA); grd.addColorStop(1, P.boardB);
+    g.fillStyle = grd; g.fillRect(0, 0, W, H);
+    g.fillStyle = P.dots;
+    for (let x = 0; x < W; x += 28) for (let y = 0; y < H; y += 28) g.fillRect(x, y, 2, 2);
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    for (let i = 0; i < 85; i++) {
+      let x = rnd() * W, y = rnd() * H, dir = Math.floor(rnd() * 8);
+      g.beginPath(); g.moveTo(x, y);
+      for (let k = 0; k < 4; k++) { dir = (dir + (rnd() < .5 ? 1 : 7)) % 8; const len = 30 + rnd() * 170, a = dir * Math.PI / 4; x += Math.cos(a) * len; y += Math.sin(a) * len; g.lineTo(x, y); }
+      g.strokeStyle = 'rgba(' + P.trace + ',' + (0.06 + rnd() * 0.09) + ')'; g.lineWidth = 2 + rnd() * 3; g.stroke();
+      g.beginPath(); g.arc(x, y, 5.5, 0, Math.PI * 2); g.fillStyle = 'rgba(' + P.trace + ',0.22)'; g.fill();
+      g.beginPath(); g.arc(x, y, 2.2, 0, Math.PI * 2); g.fillStyle = P.via; g.fill();
+    }
+    [[60, 60], [W - 60, 60], [60, H - 60], [W - 60, H - 60]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 26, 0, Math.PI * 2); g.fillStyle = 'rgba(' + P.trace + ',0.35)'; g.fill(); g.beginPath(); g.arc(x, y, 15, 0, Math.PI * 2); g.fillStyle = P.via; g.fill(); });
+    g.font = '500 24px ' + P.font;
+    g.fillStyle = P.silkText;
+    if (B.silk) g.fillText(B.silk, 120, H - 48);
+    g.fillText('U1', 120, 92);
+  }
+  drawBoard();
+  const tex = new T.CanvasTexture(cv); tex.encoding = T.sRGBEncoding; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawBoard(); tex.needsUpdate = true; });
+  const edge = new T.MeshStandardMaterial({color: P.edge, roughness: .8});
+  const topM = new T.MeshStandardMaterial({map: tex, roughness: .62, metalness: .05});
+  const board = new T.Mesh(new T.BoxGeometry(B.w, 0.36, B.d), [edge, edge, topM, edge, edge, edge]);
+  board.position.set(B.cx, -0.18, B.cz); board.receiveShadow = true; scene.add(board);
+
+  const unit = new T.BoxGeometry(1, 1, 1);
+  const silk = new T.MeshBasicMaterial({color: 0xeef1fa, transparent: true, opacity: .5});
+  function silkRect(x0, x1, z0, z1) {
+    const t = 0.05;
+    [[x0, x1, z0, z0], [x0, x1, z1, z1], [x0, x0, z0, z1], [x1, x1, z0, z1]].forEach(([a, b, c, d]) => {
+      const m = new T.Mesh(unit, silk); m.scale.set(Math.abs(b - a) + t, 0.01, Math.abs(d - c) + t);
+      m.position.set((a + b) / 2, 0.006, (c + d) / 2); scene.add(m);
+    });
+  }
+  function busMat(color, o) {
+    o = o || {};
+    const m = new T.MeshStandardMaterial({color: new T.Color(o.base || color).multiplyScalar(o.base ? 1 : 0.55), emissive: new T.Color(color), emissiveIntensity: o.rest != null ? o.rest : 0.22, roughness: .35, metalness: .65});
+    m.userData.rest = m.emissiveIntensity; return m;
+  }
+  const nrm = (a, b) => { const dx = b.x - a.x, dz = b.z - a.z, L = Math.hypot(dx, dz) || 1; return {x: -dz / L, z: dx / L}; };
+  function offsetLine(p, o) {
+    return p.map((q, i) => {
+      const nIn = i > 0 ? nrm(p[i - 1], q) : null, nOut = i < p.length - 1 ? nrm(q, p[i + 1]) : null;
+      let n = nIn || nOut;
+      if (nIn && nOut) { const k = 1 / (1 + nIn.x * nOut.x + nIn.z * nOut.z); n = {x: (nIn.x + nOut.x) * k, z: (nIn.z + nOut.z) * k}; }
+      return {x: q.x + n.x * o, z: q.z + n.z * o};
+    });
+  }
+  function trace(points, lines, mat) {
+    const gap = 0.075, w = 0.04;
+    for (let li = 0; li < lines; li++) {
+      const pts = offsetLine(points, (li - (lines - 1) / 2) * gap);
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1], dx = b.x - a.x, dz = b.z - a.z, L = Math.hypot(dx, dz);
+        const m = new T.Mesh(unit, mat); m.scale.set(L + w, 0.03, w); m.position.set((a.x + b.x) / 2, 0.016, (a.z + b.z) / 2); m.rotation.y = -Math.atan2(dz, dx);
+        m.receiveShadow = true; scene.add(m);
+      }
+      [pts[0], pts[pts.length - 1]].forEach(p => { const pad = new T.Mesh(unit, mat); pad.scale.set(0.07, 0.032, 0.07); pad.position.set(p.x, 0.016, p.z); scene.add(pad); });
+    }
+  }
+  function glowBus(m) {
+    if (!m) return;
+    gsap.killTweensOf(m);
+    gsap.timeline().to(m, {emissiveIntensity: 1.8, duration: 0.2}).to(m, {emissiveIntensity: m.userData.rest, duration: 1.4});
+  }
+  function label(html, cls, x, y, z, parent) {
+    const el = document.createElement('div'); el.className = cls; el.innerHTML = html;
+    const o = new T.CSS2DObject(el); o.position.set(x, y, z); (parent || scene).add(o); el._obj = o; return el;
+  }
+  function zone(text, x, z, color) { const el = label(text, 'zone', x, 0.05, z); if (color) el.style.setProperty('--c', color); return el; }
+
+  const pinSpots = [], recs = {}, pickables = [];
+  const dotMat = new T.MeshBasicMaterial({color: P.pinDot});
+  function chip(key, o) {
+    const w = o.w || 1.4, d = o.d || 1.2, h = o.h || (o.cell ? 0.28 : 0.34);
+    const g = new T.Group(); g.position.set(o.x, 0, o.z);
+    const mat = new T.MeshStandardMaterial({color: o.body || (o.cell ? P.cell : P.chip), roughness: .42, metalness: o.metal || .22, emissive: new T.Color(0xffffff), emissiveIntensity: 0});
+    const body = new T.Mesh(unit, mat); body.scale.set(w, h, d); body.position.y = h / 2 + 0.03; body.castShadow = true; body.receiveShadow = true; g.add(body);
+    body.userData.key = key; pickables.push(body);
+    if (!o.metal) { const dot = new T.Mesh(new T.CircleGeometry(0.05, 16), dotMat); dot.rotation.x = -Math.PI / 2; dot.position.set(-w / 2 + 0.14, h + 0.035, -d / 2 + 0.14); g.add(dot); }
+    if (!o.noPins) {
+      const n = Math.max(2, Math.floor((w - 0.2) / 0.22));
+      for (let i = 0; i < n; i++) { const px = -w / 2 + 0.14 + i * ((w - 0.28) / (n - 1)); pinSpots.push([o.x + px, o.z - d / 2 - 0.07], [o.x + px, o.z + d / 2 + 0.07]); }
+    }
+    scene.add(g);
+    const el = label('<span class="nm">' + (o.nm || key) + '</span><span class="vl"></span><span class="sb"></span>', 'tag' + (o.cell ? ' cell' : ''), 0, h + 0.08, 0, g);
+    const rec = {key: key, cell: !!o.cell, g: g, mat: mat, el: el, val: el.querySelector('.vl'), sub: el.querySelector('.sb'), h: h, x: o.x, z: o.z};
+    recs[key] = rec; return rec;
+  }
+  function finishPins() {
+    const pinGeo = new T.BoxGeometry(0.07, 0.05, 0.16), pinMat = new T.MeshStandardMaterial({color: 0xc9ced1, metalness: .9, roughness: .3});
+    const pins = new T.InstancedMesh(pinGeo, pinMat, Math.max(1, pinSpots.length)), mtx = new T.Matrix4();
+    pinSpots.forEach(([x, z], i) => { mtx.makeTranslation(x, 0.045, z); pins.setMatrixAt(i, mtx); });
+    scene.add(pins);
+  }
+
+  // packets: a small sphere with an additive halo and a pill label
+  const haloCv = document.createElement('canvas'); haloCv.width = haloCv.height = 64;
+  const hg = haloCv.getContext('2d'), rg = hg.createRadialGradient(32, 32, 0, 32, 32, 32);
+  rg.addColorStop(0, 'rgba(255,255,255,1)'); rg.addColorStop(.35, 'rgba(255,255,255,.35)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
+  hg.fillStyle = rg; hg.fillRect(0, 0, 64, 64);
+  const haloTex = new T.CanvasTexture(haloCv);
+  const pktGeo = new T.SphereGeometry(0.13, 20, 14);
+  const live = new Set();
+  function removePacket(p) {
+    scene.remove(p.mesh); if (p.el.parentNode) p.el.parentNode.removeChild(p.el);
+    p.mesh.material.dispose(); p.halo.material.dispose(); live.delete(p);
+  }
+  function fly(path, text, color, o) {
+    o = o || {};
+    const y = o.y != null ? o.y : 0.8;
+    const v = path.map(p => new T.Vector3(p.x, y, p.z));
+    const mesh = new T.Mesh(pktGeo, new T.MeshBasicMaterial({color: new T.Color(color)}));
+    const halo = new T.Sprite(new T.SpriteMaterial({map: haloTex, color: new T.Color(color), blending: T.AdditiveBlending, depthWrite: false, transparent: true}));
+    halo.scale.set(1.1, 1.1, 1.1); mesh.add(halo);
+    const el = document.createElement('div'); el.className = 'pkt'; el.style.setProperty('--c', color); el.textContent = text;
+    const lab = new T.CSS2DObject(el); lab.position.set(0, 0.42, 0); mesh.add(lab);
+    mesh.position.copy(v[0]); mesh.scale.setScalar(0.01); mesh.visible = false; scene.add(mesh);
+    const p = {mesh: mesh, halo: halo, el: el}; live.add(p);
+    let L = 0; for (let i = 1; i < v.length; i++) L += v[i].distanceTo(v[i - 1]);
+    const total = o.dur || Math.max(0.5, Math.min(2.2, L / 7));
+    const tl = gsap.timeline({onComplete: () => removePacket(p)});
+    tl.call(() => { mesh.visible = true; });
+    tl.to(mesh.scale, {x: 1, y: 1, z: 1, duration: 0.18, ease: 'back.out(2)'});
+    for (let i = 1; i < v.length; i++) { const seg = v[i].distanceTo(v[i - 1]); tl.to(mesh.position, {x: v[i].x, y: v[i].y, z: v[i].z, duration: L ? total * seg / L : 0.1, ease: 'none'}); }
+    tl.to(mesh.scale, {x: 0.01, y: 0.01, z: 0.01, duration: 0.18, ease: 'power2.in'});
+    return tl;
+  }
+  function clearPackets() { Array.from(live).forEach(removePacket); }
+
+  const active = new Set();
+  function hi(rec, color) {
+    if (!rec) return;
+    rec.mat.emissive.set(color).convertSRGBToLinear(); gsap.to(rec.mat, {emissiveIntensity: rec.cell ? 0.42 : 0.34, duration: 0.3, overwrite: 'auto'});
+    rec.el.classList.add('on'); active.add(rec);
+  }
+  function clear() {
+    active.forEach(r => { gsap.to(r.mat, {emissiveIntensity: 0, duration: 0.5, overwrite: 'auto'}); r.el.classList.remove('on'); });
+    active.clear();
+  }
+  function pop(rec, big) {
+    if (!rec || RM) return;
+    gsap.fromTo(rec.g.scale, {x: 1.12, y: big ? 1.8 : 1.5, z: 1.12}, {x: 1, y: 1, z: 1, duration: 0.65, ease: 'elastic.out(1,0.5)'});
+  }
+
+  // camera views keep the whole subject in frame on narrow screens
+  const views = opts.views || {overview: {pos: [0, 17, 14.5], tgt: [0, 0, 0.4], want: 1.55}};
+  function viewFor(name) {
+    const b = views[name] || views.overview;
+    const tgt = new T.Vector3(...b.tgt), pos = new T.Vector3(...b.pos);
+    const want = b.want || 1.25;
+    let f = camera.aspect < want ? Math.min(2.4, want / camera.aspect) : 1;
+    if (name === 'overview' || !views[name]) {
+      // the overview (and FIT) must show the whole board width, also on narrow phone screens,
+      // leaving room for the zoom buttons at the right edge
+      const tanH = Math.tan(T.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
+      const need = (B.w / 2 + 0.5) / (tanH * 0.92) + B.d * 0.25;
+      f = Math.max(f, need / pos.distanceTo(tgt));
+      controls.maxDistance = Math.max(controls.maxDistance, need * 1.3);
+      if (scene.fog) { scene.fog.near = Math.max(scene.fog.near, need * 1.1); scene.fog.far = Math.max(scene.fog.far, need * 2.6); }
+    }
+    pos.sub(tgt).multiplyScalar(f).add(tgt);
+    return {pos: pos, tgt: tgt};
+  }
+  function setView(name, instant) {
+    const v = viewFor(name), d = (RM || instant) ? 0 : 1.2;
+    const k = 1 / (gsap.globalTimeline.timeScale() || 1);
+    gsap.to(camera.position, {x: v.pos.x, y: v.pos.y, z: v.pos.z, duration: d, ease: 'power2.inOut', overwrite: 'auto'}).timeScale(k);
+    gsap.to(controls.target, {x: v.tgt.x, y: v.tgt.y, z: v.tgt.z, duration: d, ease: 'power2.inOut', overwrite: 'auto'}).timeScale(k);
+  }
+  function focusOn(x, z, dist) {
+    const d = (dist || 7) * (camera.aspect < 1.2 ? Math.min(2.2, 1.25 / camera.aspect) : 1);
+    const k = 1 / (gsap.globalTimeline.timeScale() || 1);
+    gsap.to(camera.position, {x: x * 0.8, y: d * 1.15, z: z + d, duration: RM ? 0 : 1.0, ease: 'power2.inOut', overwrite: 'auto'}).timeScale(k);
+    gsap.to(controls.target, {x: x, y: 0, z: z, duration: RM ? 0 : 1.0, ease: 'power2.inOut', overwrite: 'auto'}).timeScale(k);
+  }
+
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px';
+    labelR.setSize(w, h);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+    stage.style.setProperty('--lab', Math.max(7, Math.min(12, w / 92)) + 'px');
+  }
+  // zoom buttons (+, -, Fit) and keys (+, -, 0): the mouse wheel and pinch still work, but buttons always do
+  function zoom(f) {
+    const t = controls.target, off = camera.position.clone().sub(t);
+    off.setLength(Math.max(controls.minDistance, Math.min(controls.maxDistance, off.length() * f)));
+    const p = t.clone().add(off), k = 1 / (gsap.globalTimeline.timeScale() || 1);
+    gsap.to(camera.position, {x: p.x, y: p.y, z: p.z, duration: RM ? 0 : 0.45, ease: 'power2.out', overwrite: 'auto'}).timeScale(k);
+  }
+  if (opts.zoomUI !== false) {
+    if (!document.getElementById('lab3d-zoom-css')) {
+      const st = document.createElement('style'); st.id = 'lab3d-zoom-css';
+      st.textContent = '.zoomctl{position:absolute;z-index:4;right:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;padding:4px;background:' + P.uiBg + ';border:1px solid ' + P.uiLine + ';border-radius:6px;backdrop-filter:blur(6px)}' +
+        '.zoomctl button{width:38px;height:34px;border:0;border-radius:4px;background:transparent;color:' + P.uiText + ';font:600 18px/1 ' + P.font + ';cursor:pointer;padding:0}' +
+        '.zoomctl button.fit{font-size:10px;letter-spacing:.06em;height:28px}.zoomctl button:hover{background:' + P.uiHover + ';color:' + P.uiAccent + '}' +
+        '.zoomctl button:focus-visible{outline:2px solid ' + P.uiAccent + ';outline-offset:1px}@media(max-width:520px){.zoomctl{right:10px}.zoomctl button{width:34px;height:32px}}';
+      document.head.appendChild(st);
+    }
+    const box = document.createElement('div'); box.className = 'zoomctl'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Zoom');
+    box.innerHTML = '<button type="button" data-z="in" aria-label="Zoom in" title="Zoom in (+)">+</button>' +
+      '<button type="button" data-z="out" aria-label="Zoom out" title="Zoom out (-)">&minus;</button>' +
+      '<button type="button" class="fit" data-z="fit" aria-label="Show the whole board" title="Show the whole board (0)">FIT</button>';
+    stage.appendChild(box);
+    ['pointerdown', 'pointerup', 'wheel', 'click'].forEach(ev => box.addEventListener(ev, e => e.stopPropagation()));
+    box.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.z === 'in') zoom(0.75); else if (b.dataset.z === 'out') zoom(1.33); else setView(opts.fitView || 'overview');
+    });
+    document.addEventListener('keydown', e => {
+      const t = e.target, tag = t && t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+      if (e.key === '+' || e.key === '=') zoom(0.75);
+      else if (e.key === '-' || e.key === '_') zoom(1.33);
+      else if (e.key === '0') setView(opts.fitView || 'overview');
+    });
+  }
+  new ResizeObserver(resize).observe(stage); resize();
+  (function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); labelR.render(scene, camera); })();
+
+  // picking: click (not drag) on a chip body
+  const ray = new T.Raycaster(), mouse = new T.Vector2(); let down = null, pickCb = null;
+  labelR.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+  labelR.domElement.addEventListener('pointerup', e => {
+    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5 || !pickCb) return;
+    const r = labelR.domElement.getBoundingClientRect();
+    mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(mouse, camera);
+    const hit = ray.intersectObjects(pickables, false)[0];
+    if (hit) pickCb(hit.object.userData.key);
+  });
+
+  function intro() {
+    const v = viewFor('overview'); camera.position.copy(v.pos); controls.target.copy(v.tgt);
+    if (RM) return;
+    gsap.from(camera.position, {x: v.pos.x - 4, y: v.pos.y + 12, z: v.pos.z + 10, duration: 1.8, ease: 'power3.out'});
+    gsap.from(Object.values(recs).map(r => r.g.position), {y: 2.2, duration: 0.7, ease: 'back.out(1.6)', stagger: 0.03, delay: 0.2});
+  }
+
+  const labApi = {T: T, scene: scene, camera: camera, controls: controls, renderer: renderer, recs: recs,
+    chip: chip, finishPins: finishPins, silkRect: silkRect, zone: zone, label: label, busMat: busMat, trace: trace, glowBus: glowBus,
+    fly: fly, clearPackets: clearPackets, hi: hi, clear: clear, pop: pop, setView: setView, focusOn: focusOn, intro: intro, zoom: zoom,
+    onPick: cb => { pickCb = cb; }, unit: unit};
+  (window.__labs = window.__labs || []).push(labApi);   // lets tests reach the camera
+  return labApi;
+}
+// LAB3D END
+
+
+// ---- the door on the board: one layout shared by the 3D board and the flat 2D fallback ----
+const C = {power: '#E0B840', data: '#38B0E0', input: '#A9B4FF', net: '#9FE7FF', ok: '#6FD49B', bad: '#F0786A', ask: '#38B0E0'};
+const COMP = {
+  host: {x: -4.5, z: -2.3, w: 1.8, d: 1.0, nm: 'HOST PC'},
+  psu: {x: -4.5, z: 2.3, w: 1.8, d: 1.0, nm: '12 VDC PSU', body: '#2a2f45'},
+  facp: {x: -1.2, z: -2.6, w: 1.7, d: 0.9, nm: 'FIRE PANEL', body: '#3a1f2a'},
+  ctrl: {x: -1.6, z: 0, w: 2.2, d: 1.6, nm: 'CONTROLLER'},
+  reader: {x: 1.4, z: -2.4, w: 1.3, d: 0.9, nm: 'READER'},
+  rex: {x: 1.4, z: 2.4, w: 1.3, d: 0.9, nm: 'REX + BUTTON'},
+  lock: {x: 3.3, z: -1.3, w: 1.2, d: 0.9, nm: 'LOCK'},
+  dc: {x: 3.3, z: 1.3, w: 1.2, d: 0.9, nm: 'DOOR CONTACT'},
+  door: {x: 5.0, z: 0, w: 1.8, d: 0.24, h: 0.9, nm: 'DOOR', body: '#3a4690', noPins: true}
+};
+// traces: the wiring between parts (k = signal kind, n = parallel lines)
+const LINK = {
+  net: {k: 'net', n: 4, p: [{x: -3.6, z: -2.3}, {x: -2.3, z: -2.3}, {x: -2.3, z: -0.8}]},
+  pwr: {k: 'power', n: 2, p: [{x: -3.6, z: 2.3}, {x: -2.3, z: 2.3}, {x: -2.3, z: 0.8}]},
+  fire: {k: 'input', n: 2, p: [{x: -1.2, z: -2.15}, {x: -1.2, z: -0.8}]},
+  reader: {k: 'data', n: 4, p: [{x: -0.5, z: -0.45}, {x: 0.3, z: -0.45}, {x: 0.3, z: -2.4}, {x: 0.75, z: -2.4}]},
+  lock: {k: 'power', n: 2, p: [{x: -0.5, z: -0.15}, {x: 2.3, z: -0.15}, {x: 2.3, z: -1.3}, {x: 2.7, z: -1.3}]},
+  dc: {k: 'input', n: 2, p: [{x: -0.5, z: 0.15}, {x: 2.3, z: 0.15}, {x: 2.3, z: 1.3}, {x: 2.7, z: 1.3}]},
+  rex: {k: 'input', n: 2, p: [{x: -0.5, z: 0.45}, {x: 0.3, z: 0.45}, {x: 0.3, z: 2.4}, {x: 0.75, z: 2.4}]},
+  cut: {k: 'power', n: 1, p: [{x: 1.4, z: 2.85}, {x: 1.4, z: 3.2}, {x: 4.0, z: 3.2}, {x: 4.0, z: -1.3}, {x: 3.9, z: -1.3}]}
+};
+const rev = a => a.slice().reverse();
+// packet routes: [points, trace that glows]
+const PATHS = {
+  netUp: [rev(LINK.net.p), 'net'], netDown: [LINK.net.p, 'net'], pwrIn: [LINK.pwr.p, 'pwr'], fireIn: [LINK.fire.p, 'fire'],
+  readerIn: [rev(LINK.reader.p), 'reader'], readerOut: [LINK.reader.p, 'reader'], lockOut: [LINK.lock.p, 'lock'],
+  dcIn: [rev(LINK.dc.p), 'dc'], rexIn: [rev(LINK.rex.p), 'rex'], cut: [LINK.cut.p, 'cut'],
+  toDoor: [[{x: 3.9, z: -1.3}, {x: 4.5, z: -1.3}, {x: 4.5, z: -0.15}], null],
+  rdDoor: [[{x: 2.05, z: -2.4}, {x: 5.0, z: -2.4}, {x: 5.0, z: -0.15}], null]
+};
+const DEF = {
+  host: {nm: 'HOST PC', val: 'iVMS', sub: 'EVENT LOG'}, psu: {nm: '12 VDC PSU', val: '12 V', sub: ''}, facp: {nm: 'FIRE PANEL', val: 'NORMAL', sub: ''},
+  ctrl: {nm: 'CONTROLLER', val: 'READY', sub: ''}, reader: {nm: 'READER', val: 'CARD', sub: ''}, rex: {nm: 'REX + BUTTON', val: 'READY', sub: ''},
+  lock: {nm: 'LOCK', val: 'LOCKED', sub: ''}, dc: {nm: 'DOOR CONTACT', val: 'CLOSED', sub: ''}, door: {nm: 'DOOR', val: 'CLOSED', sub: ''}
+};
+
+// ---- rounds: {topic, site, ask (the part being designed), q, opts: [[text, points, why, short]], pre, post, steps} ----
+// ROUNDS START
+const ROUNDS = [
+  {topic: 'Fail safe or fail secure', site: 'Records and server room, Palmetto Dental', ask: 'lock',
+    q: 'Palmetto Dental keeps patient records and the network rack in one room. A hurricane cuts building power for six hours. The owner wants that door to stay locked from the hallway the whole time, while anyone inside can still walk out. Which lock and fail mode fit?',
+    opts: [
+      ['Electric strike, fail secure: with no power it stays locked from the hallway, and the inside lever always opens the latch by hand', 10, 'Fail secure means the lock needs power to release, so a power cut keeps the room locked from outside. Free egress stays mechanical: the inside lever pulls the latch back with no power at all.', 'Fail secure strike, free egress'],
+      ['Magnetic lock, fail safe: it releases when power drops', 0, 'A fail safe lock opens when it loses power. During the outage the records room would be open to anyone in the building, the opposite of the goal.', 'Fail safe mag lock'],
+      ['Electric strike, fail safe, with a backup battery', 4, 'The battery buys a few hours, but a fail safe strike still opens once the battery runs down. Pick the fail mode that matches the goal first, then add a battery if the owner wants one.', 'Fail safe strike with battery'],
+      ['Fail secure lock with no inside lever, so nobody can open it until power returns', 2, 'The fail mode is right, but a door must always let people out. A room that traps someone during an outage breaks building and fire code everywhere.', 'Fail secure, no inside lever']],
+    post: {lock: {val: 'STRIKE', sub: 'FAIL SECURE'}},
+    steps: [
+      {t: 'Power fails. The 12 VDC supply that feeds the controller and the lock drops to 0 V.', hi: ['psu'], fly: [['pwrIn', '0 V']], set: {psu: {val: '0 V'}}},
+      {t: 'The relay has nothing to send. A fail secure strike needs 12 V to release its keeper, so with 0 V the door stays locked from the hallway.', hi: ['ctrl', 'lock'], fly: [['lockOut', '0 V']], set: {lock: {val: 'LOCKED'}}},
+      {t: 'Someone inside turns the lever. The latch moves by hand, with no power, and the door opens. That is free egress, and it never depends on electricity.', hi: ['lock', 'door'], fly: [['toDoor', 'LEVER']], set: {door: {val: 'OPENS INSIDE'}}}]},
+
+  {topic: 'Mag lock exit devices', site: 'Main lobby, Palmetto Dental', ask: 'rex',
+    q: 'The main lobby has a glass storefront door held by a magnetic lock (a mag lock: an electromagnet on the frame holds a steel plate on the door). The installer is writing the parts list. Besides the outside reader, what must this door have so people inside can always get out?',
+    pre: {lock: {val: 'MAG LOCK', sub: 'FAIL SAFE'}},
+    opts: [
+      ['A request-to-exit (REX) motion sensor, a push button that cuts lock power directly, a fire alarm release, and fail safe wiring, all checked against the local code and the AHJ', 10, 'A mag lock has no handle that releases it. The REX sensor drops the lock as someone walks up, the push button cuts power even if the controller fails, and the fire alarm drops it in an emergency. The AHJ (authority having jurisdiction, usually the fire marshal or building official) has the final word.', 'REX, button, fire release, AHJ'],
+      ['Only a REX motion sensor above the door', 4, 'The sensor is needed, but it works through the controller. If the sensor or the controller fails, people are stuck. The push button that cuts power directly and the fire alarm release are also required.', 'REX sensor only'],
+      ['Only a fire alarm release, since fire is the real danger', 3, 'The fire alarm release is required, but it helps only while the alarm is active. On a normal day people still need the REX sensor and the push button to leave.', 'Fire alarm release only'],
+      ['Nothing more: people inside can push the glass door open', 0, 'A powered mag lock holds the door with hundreds of pounds of force. Pushing does nothing. Without exit devices, people inside are trapped.', 'Nothing more']],
+    post: {rex: {val: 'REX + BTN', sub: 'BOTH FITTED'}, facp: {val: 'RELEASE', sub: 'TIED IN'}},
+    steps: [
+      {t: 'A patient walks toward the door from inside. The REX motion sensor sees her and signals the controller.', hi: ['rex', 'ctrl'], fly: [['rexIn', 'REX']], set: {rex: {val: 'MOTION'}}},
+      {t: 'The controller opens the relay. The mag lock loses power and lets go, and the door opens. The log records an exit, not a forced door.', hi: ['ctrl', 'lock', 'door'], fly: [['lockOut', '0 V']], set: {lock: {val: 'RELEASED'}, door: {val: 'OPEN'}}},
+      {t: 'Backup path: the push button is wired in series with the lock power. Pressing it cuts power directly, even if the controller is frozen.', hi: ['rex', 'lock'], fly: [['cut', 'CUT 0 V']], set: {rex: {val: 'PRESSED'}}},
+      {t: 'Fire alarm: the fire panel drops the lock power, so the door is free for everyone leaving and for firefighters coming in. Confirm these details with the local code and the AHJ.', hi: ['facp', 'ctrl', 'lock'], fly: [['fireIn', 'FIRE'], ['lockOut', '0 V']], set: {facp: {val: 'ALARM'}}}]},
+
+  {topic: 'Strike or mortise lockset', site: 'Office door, Bayside Imaging (Doral)', ask: 'lock',
+    q: 'Bayside Imaging, a fictional clinic in Doral, is adding card access to an office door. The metal frame is filled with concrete grout, so cutting a deep pocket for an electric strike is hard. The owner wants the outside lever to lock and release on a schedule while the inside lever always opens. What should the installer pick?',
+    opts: [
+      ['An electrified mortise lockset: the lock body sits inside the door, power reaches it through a power transfer hinge, and the controller locks or frees the outside lever', 10, 'An electrified mortise lock keeps the electric parts in the door, so the grouted frame needs only a normal strike plate. The inside lever always pulls the latch back, and the controller can free the outside lever during office hours.', 'Electrified mortise lockset'],
+      ['An electric strike cut into the frame', 4, 'A strike is a common, fair choice on many doors, but here the grouted frame makes the deep cut-out slow and costly. The mortise lockset puts the electric part in the door instead.', 'Electric strike'],
+      ['A surface magnetic lock on the frame header', 2, 'A mag lock would also need a REX sensor, a push button, and a fire alarm release, and it does not give the lever behavior the owner asked for.', 'Mag lock'],
+      ['A keyed deadbolt and a list of who has keys', 0, 'Keys cannot follow a schedule, cannot be turned off when someone leaves, and leave no event log.', 'Keyed deadbolt']],
+    post: {lock: {val: 'MORTISE', sub: 'IN THE DOOR'}, door: {val: 'POWER HINGE'}},
+    steps: [
+      {t: 'A staff member presents a card at 08:05. The reader sends the card number to the controller.', hi: ['reader', 'ctrl'], fly: [['readerIn', 'CARD']]},
+      {t: 'It is inside office hours, so the controller closes the relay and sends 12 V toward the door.', hi: ['ctrl', 'lock'], fly: [['lockOut', '12 V']]},
+      {t: 'Power crosses into the door through a power transfer hinge (a hinge with wires inside). The mortise lock frees the outside lever.', hi: ['lock', 'door'], fly: [['toDoor', '12 V']], set: {door: {val: 'LEVER FREE'}}},
+      {t: 'Inside, the lever always pulls the latch back by hand. The grouted frame needed only a normal strike plate, no deep pocket.', hi: ['door'], set: {door: {val: 'FREE EGRESS'}}}]},
+
+  {topic: 'Reader mode', site: 'Records and server room, Palmetto Dental', ask: 'reader',
+    q: 'Only Marta Sosa, the office manager, and the IT technician may enter the records and server room. Last month a staff member borrowed a coworker\'s card to get in. The room already has a reader with a keypad. How should that reader be set?',
+    opts: [
+      ['Card plus PIN: the door opens only when a valid card and that person\'s PIN are both entered', 10, 'Card plus PIN is two-factor: something you have (the card) and something you know (the PIN). A borrowed or lost card alone no longer opens the door, and the log shows who really entered.', 'Card plus PIN'],
+      ['Card only, with a shorter schedule', 3, 'A schedule limits when a card works, not who holds it. The borrowed card would still open the door during those hours.', 'Card only, shorter schedule'],
+      ['PIN only, so nobody needs a card', 3, 'PINs get shared, written down, or watched over a shoulder. One factor alone has the same weakness as a borrowed card.', 'PIN only'],
+      ['Card or PIN, whichever the person prefers', 1, 'Either one alone opens the door, so it is only as strong as the weaker of the two. The room needs both together.', 'Card or PIN']],
+    post: {reader: {val: 'CARD + PIN', sub: 'TWO FACTOR'}, lock: {val: 'STRIKE', sub: 'FAIL SECURE'}},
+    steps: [
+      {t: 'Marta presents her card: facility code 18, card number 10047. The reader sends it to the controller.', hi: ['reader', 'ctrl'], fly: [['readerIn', 'FC18 10047']]},
+      {t: 'The card is valid for this door, but the mode is card plus PIN. The controller waits and the reader asks for the PIN.', hi: ['ctrl', 'reader'], fly: [['readerOut', 'PIN?']], set: {reader: {val: 'ENTER PIN'}}},
+      {t: 'Marta types her PIN on the keypad. The reader sends the digits to the controller, which matches them to card 10047.', hi: ['reader', 'ctrl'], fly: [['readerIn', 'PIN ****']], set: {ctrl: {val: 'MATCH'}}},
+      {t: 'Both factors match, so the relay sends 12 V to the strike for 5 s and the event lands in the log: Marta Sosa, card 10047.', hi: ['ctrl', 'lock', 'host'], fly: [['lockOut', '12 V'], ['netUp', 'MARTA 10047']], set: {lock: {val: 'OPEN 5 s'}, host: {val: 'GRANTED'}}}]},
+
+  {topic: 'Controller topology', site: 'Second office, Miami Lakes', ask: 'ctrl',
+    q: 'Palmetto Dental is opening a second office in Miami Lakes with six doors and no IT staff on site. The owner wants to add doors over time, check events and open a door from his phone, and avoid keeping a server in a closet. Which controller design fits?',
+    opts: [
+      ['Cloud access control as a service (ACaaS): PoE edge controllers at each door connect over the internet to a hosted service run from a web page or phone app', 10, 'With ACaaS the software and database live with the provider, so there is no server to patch on site. A PoE (Power over Ethernet) edge controller gets power and data on one network cable, and adding a door means adding one more edge device.', 'Cloud ACaaS, PoE edge'],
+      ['A star (hub and spoke) layout: every reader runs on RS-485 to one main controller, with a server in the closet', 4, 'A star layout on RS-485 (a two-wire serial bus that runs long distances) is a proven design, but it needs the closet server the owner wants to avoid and someone to maintain it.', 'Star on RS-485, closet server'],
+      ['A main controller with sub-controllers, one per wing of the building', 3, 'Sub-controllers spread the load in large buildings with many doors. Six doors with no IT staff gain little, and there is still a server to manage.', 'Main plus sub-controllers'],
+      ['IP readers on the office network, reporting to a server on site', 5, 'IP readers connect straight to a network switch, which saves cable. The weak point is the on-site server the owner does not want.', 'IP readers, on-site server']],
+    post: {ctrl: {nm: 'EDGE CONTROLLER', val: 'PoE', sub: 'ONE CABLE'}, host: {nm: 'CLOUD SERVICE', val: 'ACaaS', sub: 'HOSTED'}, psu: {nm: 'PoE SWITCH', val: 'PoE', sub: ''}},
+    steps: [
+      {t: 'A PoE switch sends power and data over one network cable to the edge controller at the door. No separate controller supply is needed.', hi: ['psu', 'ctrl'], fly: [['pwrIn', 'PoE']]},
+      {t: 'A card is read. Most edge controllers keep a copy of the permissions, so the door decides on the spot and keeps working if the internet drops.', hi: ['reader', 'ctrl', 'lock'], fly: [['readerIn', 'CARD'], ['lockOut', 'OPEN']], set: {lock: {val: 'OPEN'}}},
+      {t: 'The event travels over the internet to the cloud service. The provider runs the software, the backups, and the updates.', hi: ['ctrl', 'host'], fly: [['netUp', 'EVENT']], set: {host: {val: 'LOGGED'}, lock: {val: 'LOCKED'}}},
+      {t: 'The owner taps Open on his phone. The command comes down from the cloud to the edge controller, and the door opens.', hi: ['host', 'ctrl', 'lock'], fly: [['netDown', 'OPEN'], ['lockOut', 'OPEN']], set: {lock: {val: 'OPEN'}}}]},
+
+  {topic: 'Anti-tailgating', site: 'Main lobby, Brickell office tower', ask: 'door',
+    q: 'Tailgating means a second person walks in right behind someone who used a card. At a fictional office tower in Brickell, 600 employees arrive between 8:00 and 9:00. Management wants to stop tailgaters without long lines, in a modern glass lobby, with a lane for wheelchairs and carts. What fits best?',
+    pre: {door: {nm: 'LOBBY LANE'}, lock: {nm: 'BARRIER'}, dc: {nm: 'SENSORS'}},
+    opts: [
+      ['Optical turnstiles with glass wings and one wide accessible lane: sensors count each person and close the wings or alarm when two people pass on one card', 10, 'Optical turnstiles use infrared beams to count people, so they catch tailgating and still move many people per minute. The wide lane serves wheelchairs, carts, and deliveries.', 'Optical turnstiles, wide lane'],
+      ['A mantrap: two interlocked doors where the second opens only after the first closes', 4, 'A mantrap (also called a sally port) is the strongest choice and fits a server room or a vault. For 600 people in one hour it would build a long line.', 'Mantrap'],
+      ['Full-height rotating turnstiles', 5, 'They stop tailgating well, but they are slow, look like a stadium gate, and cannot serve wheelchairs, so a separate gate is still needed.', 'Full-height turnstiles'],
+      ['A camera that records the lobby doors', 2, 'Video helps an investigation after the fact, but it does not stop anyone from walking in.', 'Camera only']],
+    post: {door: {val: 'OPTICAL', sub: 'GLASS WINGS'}, lock: {val: 'WINGS SHUT'}, dc: {val: 'COUNT 0', sub: 'IR BEAMS'}},
+    steps: [
+      {t: 'An employee taps a card. The reader sends it to the controller, which allows one passage.', hi: ['reader', 'ctrl'], fly: [['readerIn', 'CARD']], set: {ctrl: {val: 'ALLOW 1'}}},
+      {t: 'The glass wings open. Infrared beam sensors in the lane count people as they cross.', hi: ['ctrl', 'lock', 'door'], fly: [['lockOut', 'OPEN']], set: {lock: {val: 'WINGS OPEN'}, dc: {val: 'COUNT 1'}}},
+      {t: 'A second person tries to follow on the same card. The beams count 2 and the sensors tell the controller.', hi: ['dc', 'ctrl'], fly: [['dcIn', 'COUNT 2']], set: {dc: {val: 'COUNT 2'}}},
+      {t: 'The controller closes the wings and sends a tailgating alarm to the security desk.', hi: ['ctrl', 'lock', 'host'], fly: [['lockOut', 'CLOSE'], ['netUp', 'TAILGATE']], set: {lock: {val: 'WINGS SHUT'}, host: {val: 'ALARM'}}}]},
+
+  {topic: 'Vehicle barriers', site: 'Truck gate, Bayshore Pharma Supply (Medley)', ask: 'lock',
+    q: 'Bayshore Pharma Supply, a fictional warehouse in Medley, stores medicines that thieves target. The truck gate must let approved drivers in with a long-range tag and also stop a vehicle that tries to ram through. Which design fits?',
+    pre: {door: {nm: 'GATE'}, lock: {nm: 'BARRIER'}, dc: {nm: 'LOOP DETECTOR'}, rex: {nm: 'EXIT LOOP'}},
+    opts: [
+      ['A drop-arm gate for daily traffic, plus crash-rated anti-ram barriers or bollards in front of it', 10, 'The drop arm controls normal traffic, while the anti-ram barrier or crash-rated bollards (tested to stop a vehicle of a given weight and speed) stop a ramming attack. Each part does the job it is built for.', 'Drop arm plus anti-ram'],
+      ['A drop-arm gate alone', 3, 'A drop arm controls who drives in, but the arm is light and a car can drive right through it.', 'Drop arm only'],
+      ['Fixed bollards across the whole entrance', 2, 'Fixed bollards stop vehicles, but they also stop the approved trucks. The gate needs a way to let the right trucks in.', 'Fixed bollards'],
+      ['A taller chain-link sliding gate', 1, 'A sliding gate controls traffic, but chain link is not crash rated, so a truck can push through it.', 'Chain-link gate']],
+    post: {door: {val: 'DROP ARM'}, lock: {val: 'ANTI-RAM', sub: 'CRASH RATED'}, reader: {val: 'LONG RANGE'}, dc: {val: 'EMPTY'}},
+    steps: [
+      {t: 'An approved truck pulls up. The long-range reader reads the tag on the windshield.', hi: ['reader', 'ctrl'], fly: [['readerIn', 'TAG']]},
+      {t: 'The controller lowers the anti-ram barrier, then raises the drop arm.', hi: ['ctrl', 'lock', 'door'], fly: [['lockOut', 'LOWER'], ['toDoor', 'ARM UP']], set: {lock: {val: 'LOWERED'}, door: {val: 'ARM UP'}}},
+      {t: 'A vehicle loop detector (a wire loop in the pavement) senses the truck pass and tells the controller.', hi: ['dc', 'ctrl'], fly: [['dcIn', 'PASSED']], set: {dc: {val: 'TRUCK PASSED'}}},
+      {t: 'The arm drops and the barrier rises again. A car that tries to ram the gate now hits a crash-rated barrier, not a light arm.', hi: ['ctrl', 'lock', 'door'], fly: [['lockOut', 'RAISE']], set: {lock: {val: 'RAISED'}, door: {val: 'ARM DOWN'}, dc: {val: 'EMPTY'}}}]},
+
+  {topic: 'Cable supervision', site: 'Staff entrance, Palmetto Dental', ask: 'dc',
+    q: 'At the staff entrance, a thief could short the door contact wires (join them with a jumper) so the door looks closed while it is forced open. The installer can wire the input as two-state, or as four-state supervised with end-of-line (EOL) resistors at the door. What does four-state supervision add?',
+    opts: [
+      ['The controller reads the loop resistance, so it can tell four states apart: normal, alarm, cut, and short. A cut or shorted cable raises a trouble alarm instead of looking normal', 10, 'The EOL resistors give each state its own resistance. Normal and alarm read as two different values, an open circuit means a cut cable, and almost zero ohms means a short. The thief\'s jumper now raises an alarm.', 'Four states with EOL resistors'],
+      ['Nothing useful: two-state already reports open and closed, and a cut wire shows as open', 4, 'Half right. On a normally closed loop a cut does look like an open door. But a jumper across the wires reads as closed forever, and two-state cannot tell that short from a normal closed door.', 'Two-state is enough'],
+      ['It encrypts the signal between the reader and the controller', 0, 'That is OSDP Secure Channel on the reader cable, a different feature. Supervision is about the input loop of the door contact.', 'Encrypts reader data'],
+      ['It lets four doors share one door contact', 0, 'Each door still needs its own contact. Four-state names the four conditions the controller can report on one loop.', 'Four doors, one contact']],
+    post: {dc: {val: '4-STATE', sub: 'EOL RESISTORS'}, lock: {val: 'STRIKE', sub: 'FAIL SECURE'}},
+    steps: [
+      {t: 'Normal: the door is closed and the controller reads the expected resistance through the EOL resistors.', hi: ['dc', 'ctrl'], fly: [['dcIn', 'NORMAL']], set: {dc: {val: 'NORMAL'}}},
+      {t: 'Alarm: the door opens without a card. The resistance changes to the alarm value and the controller raises a door forced alarm.', hi: ['door', 'dc', 'ctrl'], fly: [['dcIn', 'ALARM']], set: {door: {val: 'FORCED'}, dc: {val: 'ALARM'}}},
+      {t: 'Short: the thief jumps the wires. The loop now reads almost 0 ohms, a value a healthy loop never shows.', hi: ['dc', 'ctrl'], fly: [['dcIn', 'SHORT']], set: {dc: {val: 'SHORT'}, door: {val: 'CLOSED'}}},
+      {t: 'The controller sends a trouble alarm to the host PC. On a two-state loop the same jumper would have looked like a closed door.', hi: ['ctrl', 'host'], fly: [['netUp', 'TROUBLE']], set: {host: {val: 'TROUBLE'}}}]},
+
+  {topic: 'Door handing and swing', site: 'Exam room 2, Palmetto Dental', ask: 'door',
+    q: 'Palmetto Dental is adding an electrified lever lockset to exam room 2. To order the right hand, the installer stands in the hallway, the outside (secure side) of the door. The hinges are on her right, and the door swings away from her into the room. What handing goes on the order?',
+    opts: [
+      ['Right hand (RH)', 10, 'Handing is judged from the outside, the side where the key or reader is. Hinges on the right plus a door that swings away from you is right hand. A reverse hand (RHR or LHR) swings toward you.', 'RH'],
+      ['Right hand reverse (RHR)', 4, 'The hinge side is right, but reverse means the door swings toward you, out into the hallway. This door swings away, into the room.', 'RHR'],
+      ['Left hand reverse (LHR)', 3, 'This is what you see from inside the room: hinges on the left and a door swinging toward you. Handing is always judged from the outside, so the answer flips.', 'LHR'],
+      ['Left hand (LH)', 0, 'Both the hinge side and the swing are off. From the hallway the hinges are on the right.', 'LH']],
+    post: {door: {val: 'RH', sub: 'SWINGS IN'}, lock: {nm: 'LEVER LOCKSET', val: 'RH'}},
+    steps: [
+      {t: 'Stand on the outside, the hallway side where the reader is. Handing is always judged from this side.', hi: ['reader', 'door'], fly: [['rdDoor', 'OUTSIDE']]},
+      {t: 'The hinges are on your right and the door swings away from you into the room. Right hinges plus a push away means right hand (RH).', hi: ['door'], set: {door: {val: 'RH'}}},
+      {t: 'The lockset is ordered RH so the lever and latch face the right way. A card at the reader frees the outside lever.', hi: ['reader', 'ctrl', 'lock'], fly: [['readerIn', 'CARD'], ['lockOut', '12 V']], set: {lock: {val: 'LEVER FREE'}}},
+      {t: 'Swing matters for exits too: where the code requires it, exit doors swing in the direction people travel to leave. Check hand and swing before you order any hardware.', hi: ['door', 'lock'], set: {lock: {val: 'RH'}}}]},
+
+  {topic: 'Check the Copilot design', site: 'Rear stair exit, Palmetto Dental', ask: 'lock',
+    q: 'A classmate asked Microsoft Copilot to design the rear stair exit. Copilot suggested: "Install a 1,200 lb magnetic lock on the stair door, wire it to the controller, and add a card reader on the stair side so staff can come back in." The design has no request-to-exit device. What is the main problem?',
+    pre: {lock: {val: 'MAG LOCK', sub: 'COPILOT DRAFT'}, rex: {val: 'NONE'}},
+    opts: [
+      ['People leaving by the stairs could be trapped: a mag lock on an exit needs a REX sensor, a push button that cuts power, and a fire alarm release approved by the AHJ, or the planned delayed egress panic bar', 10, 'Copilot left out every way to get out. A powered mag lock holds the door shut, so with no REX, no push button, and no fire alarm release, the stair exit stops being an exit. Always check a Copilot answer against the code and the AHJ.', 'Trapped: no egress devices'],
+      ['The magnet is too weak; it should be 1,500 lb', 0, 'Holding force is not the problem. A stronger magnet makes the trap worse, not better.', 'Magnet too weak'],
+      ['A mag lock is fail secure, so it stays locked when the power fails', 0, 'Not true: a mag lock is fail safe and releases when it loses power. The danger is while the power is on, when nothing lets people out.', 'Mag lock is fail secure'],
+      ['Nothing is wrong if the fire alarm also releases the lock', 4, 'A fire alarm release is required, but it helps only during an alarm. On a normal day someone must still be able to walk out, so the REX sensor and the push button are still missing.', 'Fire release is enough']],
+    post: {lock: {val: 'MAG LOCK', sub: 'NO EXIT DEVICE'}, rex: {val: 'MISSING'}},
+    steps: [
+      {t: 'The Copilot design: the mag lock gets 12 V all day and holds the stair door shut with 1,200 lb of force.', hi: ['psu', 'ctrl', 'lock'], fly: [['pwrIn', '12 V'], ['lockOut', '12 V']], set: {lock: {val: 'LOCKED'}}},
+      {t: 'A staff member inside needs to leave. There is no REX sensor and no push button, so nothing signals the controller or cuts the power. The door stays locked.', hi: ['rex', 'lock', 'door'], fly: [['rexIn', 'NO SIGNAL']], set: {door: {val: 'TRAPPED'}}},
+      {t: 'The fix: add the REX sensor and a push button that cuts lock power, and tie the lock to the fire alarm. Or use the planned delayed egress panic bar, approved by the AHJ.', hi: ['rex', 'facp', 'ctrl', 'lock'], fly: [['rexIn', 'REX'], ['lockOut', '0 V']], set: {rex: {val: 'REX + BTN'}, facp: {val: 'RELEASE'}, lock: {val: 'RELEASED'}, door: {val: 'OPEN'}}},
+      {t: 'Microsoft Copilot can draft a design fast. You still check it against the code, the AHJ, and the door schedule before anything is installed.', hi: ['ctrl', 'host'], fly: [['netUp', 'CHECKED']], set: {host: {val: 'REVIEWED'}}}]}
+];
+// ROUNDS END
+
+const shuffle = a => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const wait = ms => new Promise(res => setTimeout(res, ms));
+let order = [], r = 0, picked = null, total = 0, log = [], G = null;
+let si = -1, token = 0, playing = false;
+
+function merge(base, add) { const out = {}; Object.keys(base).forEach(k => { out[k] = Object.assign({}, base[k], add && add[k] ? add[k] : {}); }); return out; }
+// the board state before the answer (the part being designed shows '?') and after the check
+function cfgBefore(R) { const c = merge(DEF, R.pre); c[R.ask] = Object.assign({}, c[R.ask], {val: '?', sub: 'YOUR CALL'}); return c; }
+function cfgAfter(R, upto) { let c = merge(merge(DEF, R.pre), R.post); for (let i = 0; i < upto; i++) if (R.steps[i].set) c = merge(c, R.steps[i].set); return c; }
+
+// ---- board: 3D with the Lab3D kit, or a flat SVG with the same layout ----
+function board3D(stage) {
+  const lab = Lab3D(stage, {board: {w: 12.4, d: 7.4, silk: 'PALMETTO DENTAL GROUP  DOOR DESIGN  LSN-ACCESS', seed: 7},
+    views: {overview: {pos: [0.55, 12, 7.4], tgt: [0.55, 0, 0.35], want: 1.5}}});
+  if (!lab) return null;
+  const mats = {}, recs = {};
+  Object.entries(LINK).forEach(([k, l]) => { mats[k] = lab.busMat(C[l.k]); lab.trace(l.p, l.n, mats[k]); });
+  Object.entries(COMP).forEach(([k, o]) => { recs[k] = lab.chip(k, o); });
+  lab.zone('outside', 5.0, -1.25, C.data); lab.zone('inside', 5.0, 1.25, C.input);
+  lab.silkRect(4.0, 6.0, -0.06, 0.06);
+  lab.finishPins(); lab.intro();
+  return {
+    config(cfg) { Object.keys(cfg).forEach(k => { const rec = recs[k], v = cfg[k]; rec.el.querySelector('.nm').textContent = v.nm; rec.val.textContent = v.val; rec.sub.textContent = v.sub || ''; }); },
+    mark(keys, color) { lab.clear(); keys.forEach(k => lab.hi(recs[k], color)); },
+    run(step, color) {
+      lab.clear(); lab.clearPackets();
+      (step.hi || []).forEach(k => lab.hi(recs[k], color));
+      if (step.hi && step.hi.length) lab.pop(recs[step.hi[step.hi.length - 1]]);
+      const flights = step.fly || [];
+      if (!flights.length) return wait(450);
+      return new Promise(res => {
+        const tl = gsap.timeline();
+        flights.forEach(([p, text]) => { const P = PATHS[p]; tl.call(() => { if (P[1]) lab.glowBus(mats[P[1]]); }); tl.add(lab.fly(P[0], text, color)); });
+        tl.call(res);
+      });
+    },
+    stop() { lab.clearPackets(); lab.clear(); }
+  };
+}
+
+function board2D(stage) {
+  $('#nogl').hidden = false;
+  const NS = 'http://www.w3.org/2000/svg', X = x => (x + 6.2) * 40, Y = z => (z + 3.7) * 40;
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 496 296'); svg.setAttribute('class', 'flat');
+  svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Flat board: controller, reader, lock, door contact, exit devices, and the door');
+  let h = '<rect x="2" y="2" width="492" height="292" rx="12" fill="#1a2257" stroke="#3a4690"/>';
+  Object.entries(LINK).forEach(([k, l]) => { h += '<polyline id="ln-' + k + '" points="' + l.p.map(p => X(p.x) + ',' + Y(p.z)).join(' ') + '" fill="none" stroke="' + C[l.k] + '" stroke-opacity=".55" stroke-width="' + (l.n > 2 ? 5 : 3) + '" stroke-linejoin="round"/>'; });
+  h += '<line x1="' + X(4.0) + '" y1="' + Y(0) + '" x2="' + X(6.0) + '" y2="' + Y(0) + '" stroke="#eef1fa" stroke-opacity=".35" stroke-width="2"/>';
+  h += '<text x="' + X(5.0) + '" y="' + Y(-1.0) + '" fill="' + C.data + '" font-size="10" text-anchor="middle" letter-spacing="1.5">OUTSIDE</text><text x="' + X(5.0) + '" y="' + Y(1.25) + '" fill="' + C.input + '" font-size="10" text-anchor="middle" letter-spacing="1.5">INSIDE</text>';
+  Object.entries(COMP).forEach(([k, o]) => {
+    const x = X(o.x - o.w / 2), y = Y(o.z - o.d / 2), w = o.w * 40, d = o.d * 40, cx = X(o.x), cy = Y(o.z);
+    const thin = d < 20, vy = thin ? y + d + 14 : cy + 5, sy = thin ? vy + 12 : cy + 13;
+    h += '<g id="c-' + k + '" data-thin="' + (thin ? 1 : 0) + '" data-cy="' + cy + '" data-w="' + w + '"><rect class="cb" x="' + x + '" y="' + y + '" width="' + w + '" height="' + d + '" rx="4" fill="' + (o.body || '#161a2e') + '" stroke="#4a5490" stroke-width="1.5"/>' +
+      '<text class="nm" x="' + cx + '" y="' + (y - 4) + '" fill="#aeb3c9" font-size="10" text-anchor="middle" letter-spacing=".8"></text>' +
+      '<text class="vl" x="' + cx + '" y="' + vy + '" fill="#eef1fa" font-size="13" font-weight="600" text-anchor="middle"></text>' +
+      '<text class="sb" x="' + cx + '" y="' + sy + '" fill="#aeb3c9" font-size="8" text-anchor="middle"></text></g>';
+  });
+  h += '<g id="pk2" visibility="hidden"><circle r="12" fill="#fff" opacity=".18"/><circle r="6.5" fill="#fff"/><rect class="pb" x="-30" y="-29" width="60" height="16" rx="3"/><text class="pt" y="-17" font-size="11" font-weight="700" text-anchor="middle" fill="#06120f"></text></g>';
+  svg.innerHTML = h; stage.appendChild(svg);
+  const pk = svg.querySelector('#pk2'), dots = pk.querySelectorAll('circle'), pb = pk.querySelector('.pb'), pt = pk.querySelector('.pt');
+  let raf = 0;
+  function clearHi() { svg.querySelectorAll('.cb').forEach(b => { b.setAttribute('stroke', '#4a5490'); b.setAttribute('stroke-width', '1.5'); }); svg.querySelectorAll('polyline').forEach(l => l.setAttribute('stroke-opacity', '.55')); }
+  function hi(keys, color) { keys.forEach(k => { const b = svg.querySelector('#c-' + k + ' .cb'); b.setAttribute('stroke', color); b.setAttribute('stroke-width', '3.5'); }); }
+  function flyOne(pts, text, color) {
+    return new Promise(res => {
+      const P = pts.map(p => [X(p.x), Y(p.z)]); let L = 0; const seg = [];
+      for (let i = 1; i < P.length; i++) { const s = Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); seg.push(s); L += s; }
+      dots[0].setAttribute('fill', color); dots[1].setAttribute('fill', color); pb.setAttribute('fill', color); pt.textContent = text;
+      const tw = Math.max(40, text.length * 7 + 12); pb.setAttribute('x', -tw / 2); pb.setAttribute('width', tw);
+      const put = d => { let i = 0; while (i < seg.length - 1 && d > seg[i]) { d -= seg[i]; i++; } const f = seg[i] ? Math.min(1, d / seg[i]) : 1; pk.setAttribute('transform', 'translate(' + (P[i][0] + (P[i + 1][0] - P[i][0]) * f) + ',' + (P[i][1] + (P[i + 1][1] - P[i][1]) * f) + ')'); };
+      pk.setAttribute('visibility', 'visible');
+      if (RM) { put(L); setTimeout(() => { pk.setAttribute('visibility', 'hidden'); res(); }, 500); return; }
+      const dur = Math.max(600, Math.min(1800, L * 5)), t0 = performance.now();
+      const tick = now => { const k = Math.min(1, (now - t0) / dur); put(L * k); if (k < 1) raf = requestAnimationFrame(tick); else { pk.setAttribute('visibility', 'hidden'); res(); } };
+      raf = requestAnimationFrame(tick);
+    });
+  }
+  return {
+    config(cfg) { Object.keys(cfg).forEach(k => { const g = svg.querySelector('#c-' + k), v = cfg[k]; g.querySelector('.nm').textContent = v.nm; g.querySelector('.vl').textContent = v.val; g.querySelector('.sb').textContent = v.sub || '';
+      const vl = g.querySelector('.vl'), room = +g.dataset.w + (g.dataset.thin === '1' ? 30 : 10);
+      vl.setAttribute('font-size', Math.max(8, Math.min(13, room / (Math.max(1, String(v.val).length) * 0.62))).toFixed(1));
+      if (g.dataset.thin === '0') vl.setAttribute('y', +g.dataset.cy + (v.sub ? 1 : 5)); }); },
+    mark(keys, color) { clearHi(); hi(keys, color); },
+    async run(step, color) {
+      clearHi(); hi(step.hi || [], color);
+      for (const [p, text] of (step.fly || [])) { const P = PATHS[p]; if (P[1]) svg.querySelector('#ln-' + P[1]).setAttribute('stroke-opacity', '1'); await flyOne(P[0], text, color); }
+      if (!(step.fly || []).length) await wait(450);
+    },
+    stop() { cancelAnimationFrame(raf); pk.setAttribute('visibility', 'hidden'); clearHi(); }
+  };
+}
+
+// ---- the explanation: steps with Back, Step, and Play ----
+function verdict() { const l = log[r]; return l && l.pts === l.max; }
+function stepColor() { return verdict() ? C.ok : C.bad; }
+function setStepButtons() {
+  const R = ROUNDS[order[r]], checked = !!log[r];
+  $('#btnPlay').disabled = !checked || playing; $('#btnBack').disabled = !checked || playing || si <= 0; $('#btnStep').disabled = !checked || playing || si >= R.steps.length - 1;
+  $('#btnPlay').textContent = playing ? 'Playing...' : si >= R.steps.length - 1 ? 'Play again' : 'Play the explanation';
+}
+async function showStep(i) {
+  const R = ROUNDS[order[r]], my = ++token, s = R.steps[i], ok = verdict();
+  si = i; G.stop(); G.config(cfgAfter(R, i));
+  $('#cap').style.setProperty('--cap', ok ? 'var(--ok)' : 'var(--bad)');
+  $('#capT').textContent = 'Step ' + (i + 1) + ' of ' + R.steps.length + (ok ? ' · your design matches' : ' · review the best design');
+  $('#capB').textContent = s.t; setStepButtons();
+  await G.run(s, stepColor());
+  if (my !== token) return false;
+  G.config(cfgAfter(R, i + 1));
+  return true;
+}
+async function play() {
+  const R = ROUNDS[order[r]]; playing = true; const my = token + 1; setStepButtons();
+  for (let i = 0; i < R.steps.length; i++) {
+    const done = await showStep(i); if (!done || token !== my + i) { playing = false; setStepButtons(); return; }
+    if (i < R.steps.length - 1) { await wait(RM ? 1800 : Math.min(3200, 1200 + R.steps[i].t.length * 12)); if (token !== my + i) { playing = false; setStepButtons(); return; } }
+  }
+  playing = false; setStepButtons();
+}
+function stopPlay() { token++; playing = false; if (G) G.stop(); }
+
+// ---- the challenge ----
+function drawProgress() { $('#prog').innerHTML = ROUNDS.map((_, i) => { const l = log[i]; return '<i class="' + (l ? (l.pts === l.max ? 'ok' : l.pts > 0 ? 'part' : 'bad') : i === r ? 'now' : '') + '"></i>'; }).join(''); }
+function showRound() {
+  stopPlay();
+  const R = ROUNDS[order[r]]; picked = null; si = -1;
+  $('#qTitle').textContent = 'Round ' + (r + 1) + ' of ' + ROUNDS.length; $('#qTopic').textContent = R.topic; $('#qText').textContent = R.q; $('#fb').innerHTML = '';
+  $('#doorName').textContent = R.site;
+  R._opts = shuffle(R.opts);
+  $('#opts').innerHTML = R._opts.map((o, i) => '<button type="button" aria-pressed="false" data-i="' + i + '"><span class="key">' + 'ABCD'[i] + '</span>' + esc(o[0]) + '</button>').join('');
+  $('#btnCheck').disabled = false; $('#btnNext').disabled = true; $('#btnNext').textContent = 'Next round';
+  G.config(cfgBefore(R)); G.mark([R.ask], C.ask);
+  $('#cap').style.removeProperty('--cap'); $('#capT').textContent = 'The door you are designing';
+  $('#capB').textContent = 'The part marked ? is your call: ' + COMP[R.ask].nm.toLowerCase() + '. After you check your answer, play the explanation.';
+  setStepButtons(); drawProgress();
+}
+$('#opts').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled) return; picked = +b.dataset.i; document.querySelectorAll('#opts button').forEach(x => { x.setAttribute('aria-pressed', x === b); x.classList.toggle('sel', x === b); }); });
+$('#btnCheck').addEventListener('click', () => {
+  if (picked == null) { $('#fb').innerHTML = '<div class="feedback info">Pick an answer first.</div>'; return; }
+  const R = ROUNDS[order[r]], o = R._opts[picked], max = Math.max(...R.opts.map(x => x[1])), best = R._opts.find(x => x[1] === max);
+  total += o[1]; log[r] = {topic: R.topic, a: o[3], best: best[3], pts: o[1], max: max};
+  document.querySelectorAll('#opts button').forEach((b, i) => { b.disabled = true; b.classList.remove('sel'); if (R._opts[i] === best) b.classList.add('right'); else if (i === picked) b.classList.add('wrong'); });
+  const cls = o[1] === max ? 'ok' : o[1] > 0 ? 'info' : 'bad';
+  $('#fb').innerHTML = '<div class="feedback ' + cls + '"><b>' + o[1] + ' of ' + max + ' points.</b> ' + esc(o[2]) + (o === best ? '' : '<p class="best"><b>Best answer:</b> ' + esc(best[0]) + '. ' + esc(best[2]) + '</p>') + '</div>';
+  $('#score').textContent = total; $('#btnCheck').disabled = true; $('#btnNext').disabled = false; $('#btnNext').textContent = r === ROUNDS.length - 1 ? 'See results' : 'Next round';
+  G.config(cfgAfter(R, 0)); G.mark([R.ask], o === best ? C.ok : C.bad);
+  $('#cap').style.setProperty('--cap', o === best ? 'var(--ok)' : 'var(--bad)');
+  $('#capT').textContent = o === best ? 'Your design matches' : 'Review the best design';
+  $('#capB').textContent = 'The board now shows the best design for this door. Press Play to watch it work, or use Step and Back to go at your own pace.';
+  drawProgress(); setStepButtons();
+});
+$('#btnPlay').addEventListener('click', () => { if (!log[r] || playing) return; play(); });
+$('#btnStep').addEventListener('click', () => { if (!log[r]) return; stopPlay(); showStep(Math.min(si + 1, ROUNDS[order[r]].steps.length - 1)); });
+$('#btnBack').addEventListener('click', () => { if (!log[r]) return; stopPlay(); showStep(Math.max(si - 1, 0)); });
+$('#btnNext').addEventListener('click', () => { if (r < ROUNDS.length - 1) { r++; showRound(); } else finishAll(); });
+function finishAll() {
+  stopPlay();
+  $('#results').hidden = false; $('#qTitle').textContent = 'Finished'; $('#qTopic').textContent = 'All ten doors'; $('#qText').textContent = 'Your score: ' + total + ' out of 100. The table below shows every round.'; $('#opts').innerHTML = ''; $('#fb').innerHTML = ''; $('#btnCheck').disabled = true; $('#btnNext').disabled = true;
+  $('#btnPlay').disabled = true; $('#btnStep').disabled = true; $('#btnBack').disabled = true;
+  $('#resTable').innerHTML = '<tr><th>Round</th><th>Topic</th><th>Your answer</th><th>Points</th></tr>' + log.map((l, i) => '<tr><td>' + (i + 1) + '</td><td>' + esc(l.topic) + '</td><td>' + esc(l.a) + (l.pts === l.max ? '' : '<span class="muted bestcell">Best: ' + esc(l.best) + '</span>') + '</td><td class="pts ' + (l.pts === l.max ? 'ok' : l.pts > 0 ? 'part' : 'bad') + '">' + l.pts + ' / ' + l.max + '</td></tr>').join('') + '<tr class="tot"><td colspan="3"><b>Total</b></td><td><b>' + total + ' / 100</b></td></tr>';
+  $('#resNote').textContent = total === 100 ? 'Every door is safe and secure. Use the same thinking when you write the door schedule for the activity sheet.' : total >= 70 ? 'Good work. Review the rounds marked in gold or coral, then try again for 100.' : 'Review the feedback for each round, then try again. Every attempt shuffles the rounds and the answers.';
+  drawProgress(); $('#results').scrollIntoView({behavior: RM ? 'auto' : 'smooth', block: 'start'});
+}
+function start() { order = shuffle(ROUNDS.map((_, i) => i)); r = 0; total = 0; log = []; $('#score').textContent = 0; $('#results').hidden = true; $('#specRounds').textContent = ROUNDS.length; showRound(); }
+$('#btnAgain').addEventListener('click', () => { start(); document.querySelector('.grid.two').scrollIntoView({behavior: RM ? 'auto' : 'smooth', block: 'start'}); });
+try { G = board3D($('#stage')); } catch (e) { console.error(e); G = null; }
+if (!G) { $('#stage').querySelectorAll('canvas,.labels,.zoomctl').forEach(n => n.remove()); G = board2D($('#stage')); }
+// hooks for automated tests: the points of the current options and the playback state
+window.__door = {points: () => (ROUNDS[order[r]]._opts || []).map(o => o[1]), round: () => r, total: () => total, playing: () => playing, step: () => si, mode: () => ($('#stage svg.flat') ? '2d' : '3d')};
+start();
+})();
+</script>
+</body>
+</html>
