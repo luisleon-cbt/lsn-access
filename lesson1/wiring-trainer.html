@@ -234,6 +234,33 @@
     .controls{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
   @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---- stacked layout (v2, October 29 2026): the board uses the full width of the page, instructions and controls go below it ---- */
+  .app{display:block;height:auto;min-height:0}
+  .app>.lab-head{max-width:1240px;margin:0 auto;padding:18px 16px 14px}
+  .app>.lab-head h1{font-size:clamp(24px,3vw,32px);margin:4px 0 6px}
+  .app>.stage{width:100%;height:clamp(420px,70vh,860px);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .panel{max-width:1240px;margin:0 auto;border-left:0;overflow:visible;background:none;display:block;columns:2 420px;column-gap:28px;padding:20px 16px 28px}
+  .panel>*{break-inside:avoid;margin:0 0 22px}
+  .panel>header,.panel>footer,.panel>.guide,.panel>.span-all{column-span:all}
+  /* how to use: numbered steps with the current one highlighted, plus a "do this now" line */
+  .guide{max-width:1240px;margin:0 auto;padding:18px 16px 4px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px 26px;align-items:start}
+  .guide h2{grid-column:1/-1;margin:0;font-size:18px}
+  .guide ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:s}
+  .guide ol.steps li{counter-increment:s;position:relative;padding:8px 10px 8px 44px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--silk);font-size:15px;line-height:1.45}
+  .guide ol.steps li::before{content:counter(s);position:absolute;left:10px;top:8px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:700 13px var(--font-mono);background:var(--line);color:var(--silk)}
+  .guide ol.steps li.current{border-color:var(--cbt-gold);background:var(--panel-2)}
+  .guide ol.steps li.current::before{background:var(--cbt-gold);color:var(--cbt-navy)}
+  .guide ol.steps li.done{color:var(--silk-dim)}
+  .guide ol.steps li.done::before{content:"\2713";background:var(--ok);color:#06120f}
+  .guide ol.steps li b,.guide .now b{color:var(--cbt-gold);font-weight:600}
+  .guide .now{border-left:4px solid var(--cbt-sky);background:var(--panel-2);border-radius:6px;padding:14px 16px;font-size:16px;line-height:1.5;color:var(--silk)}
+  .guide .now .k{display:block;font:600 10.5px var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--cbt-sky);margin-bottom:4px}
+  .guide .tips{margin:10px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--silk-dim);display:grid;gap:4px}
+  @media(max-width:860px){.guide{grid-template-columns:1fr}.panel{columns:1}}
+  /* page mode: board card on top across the full width, the round or task below */
+  .card .stage.wide{aspect-ratio:21/9;min-height:360px}
+  @media(max-width:860px){.card .stage.wide{aspect-ratio:4/3;min-height:0}}
   /* ===== end of theme ===== */
   /* page-specific CSS: single-door wiring trainer */
   .tl{pointer-events:none;font:600 calc(var(--lab) * .82) var(--font-mono);color:var(--silk);letter-spacing:.04em;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.9);background:rgba(11,15,43,.55);padding:0 3px;border-radius:2px}
@@ -254,9 +281,11 @@
   .connect .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
   .picked{font-size:13px;color:var(--silk-dim);min-height:1.4em;margin:0}
   .picked b{color:var(--cbt-gold)}
-  .wires{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:5px;background:var(--board-deep)}
+  .wires{list-style:none;margin:10px 0 0;padding:4px 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));column-gap:14px;border:1px solid var(--line);border-radius:5px;background:var(--board-deep)}
+  #regs{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
   .wires:empty::before{content:"No wires yet.";display:block;padding:10px;color:var(--silk-dim);font-size:13px}
-  .wires li{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:8px;align-items:center;padding:5px 8px;font-size:12.5px;border-bottom:1px solid rgba(42,52,112,.55)}
+  .wires li{display:grid;grid-template-columns:22px 14px minmax(0,1fr) auto;gap:8px;align-items:center;padding:5px 8px;font-size:12.5px;border-bottom:1px solid rgba(42,52,112,.55)}
+  .wires li .no{font:600 11px var(--font-mono);color:var(--silk-dim);text-align:right}
   .wires li.flag{background:rgba(240,120,106,.12)}
   .wires .sw{width:14px;height:6px;border-radius:2px;background:var(--c);box-shadow:0 0 0 1px rgba(255,255,255,.25)}
   .wires .btn{padding:4px 8px;font-size:11px}
@@ -275,6 +304,11 @@
   .tests li::before{content:"\2022";font-weight:700;color:var(--silk-dim)}
   .tests li.pass::before{content:"PASS";font:600 10px var(--font-mono);color:var(--ok)}
   .tests li.fail::before{content:"FAIL";font:600 10px var(--font-mono);color:var(--bad)}
+  /* phones: the "Do this now" line comes right under the board, before the numbered steps */
+  @media(max-width:860px){.guide h2{order:-2}.guide>div{order:-1}}
+  /* flat board on the wide stage: keep it clear of the HUD bars at the top and bottom */
+  @media(min-width:861px){.stage:has(.nogl:not([hidden])) .flat{top:92px;height:calc(100% - 148px)}}
+  @media(max-width:520px){.stage:has(.nogl:not([hidden])) .hud-top{top:70px}.stage:has(.nogl:not([hidden])) .flat{top:190px;height:calc(100% - 270px)}}
   .flat .pin{cursor:pointer}
   .flat .pin:focus{outline:none}
   .flat .pin:focus-visible rect,.flat .pin:focus-visible circle{stroke:#E0B840;stroke-width:3}
@@ -290,7 +324,12 @@
 </header>
 
 <div class="app">
-  <section class="stage" id="stage" aria-label="3D trainer panel. Drag to orbit, use the zoom buttons or scroll to zoom. Click a wire end, then a terminal, to connect them. The connection list in the side panel does the same with a keyboard.">
+  <header class="lab-head">
+    <p class="eyebrow">LSN-ACCESS · Lesson 1 · Lab simulator</p>
+    <h1>Single-door wiring trainer</h1>
+    <p class="lede">Wire the reader, the lock, the door contact, and the exit button to the controller. Then power on and test the door, the same way you will on the real trainer.</p>
+  </header>
+  <section class="stage" id="stage" aria-label="3D trainer panel. Drag to orbit, use the zoom buttons or scroll to zoom. Click a wire end, then a terminal, to connect them. The Wire end and Terminal lists below the board do the same with a keyboard.">
     <div class="hud hud-top">
       <ol class="phases" aria-label="Test phase">
         <li data-p="power" style="--c:var(--cbt-gold)">Power</li>
@@ -319,16 +358,30 @@
         <button type="button" id="follow" class="on" aria-pressed="true">Follow</button>
       </div>
     </div>
-    <div class="nogl" id="nogl" hidden>The 3D view needs WebGL and the 3D libraries, which are not available here. The flat board below works the same way.</div>
+    <div class="nogl" id="nogl" hidden>The 3D view needs WebGL and the 3D libraries, which are not available here. This flat board works the same way: click a wire end, then a terminal.</div>
+  </section>
+
+  <section class="guide" aria-labelledby="guideTitle">
+    <h2 id="guideTitle">How to use this lab</h2>
+    <ol class="steps" id="howSteps">
+      <li data-h="1">Choose the lock under <b>Panel setup</b> below. Start with <b>Electric strike</b>, as on your lab sheet. After its test, come back and choose <b>Magnetic lock</b>.</li>
+      <li data-h="2">Connect the wires one at a time. On the board above, click a wire end, then click the terminal where it lands. Or choose a <b>Wire end</b> and a <b>Terminal</b> below and press <b>Connect</b>. The panel needs 18 wires.</li>
+      <li data-h="3">Press <b>Check wiring</b>. It names the first problem. Fix it, then check again until it says all 18 connections are right. <b>Show hint</b> tells you the fix, but each hint costs 2 points.</li>
+      <li data-h="4">Press <b>Power on and test</b>. Watch the board above and read each step under <b>Test the door</b> below. Your score out of 100 appears when the test ends.</li>
+      <li data-h="5">Press <b>Fault hunt</b> under Panel setup. A new technician wired that panel with one or two faults. Run the test, find the faults in the wire list, fix them, and test again.</li>
+    </ol>
+    <div>
+      <div class="now" aria-live="polite"><span class="k">Do this now</span><span id="nowText">Connect the first wire: the supply <b>+12V</b> to <b>+12V</b> in the controller POWER block.</span></div>
+      <ul class="tips">
+        <li>Wire with the power off. The test turns the power on for you.</li>
+        <li>Drag on the board to turn it. Use <b>+</b>, <b>&minus;</b>, the arrows, and <b>FIT</b> to zoom and move. <b>Terminals</b> and <b>Door</b> jump to those parts.</li>
+        <li>Keyboard: Space steps the test, B steps back, R runs or pauses, Esc cancels a pick.</li>
+        <li>This page does not save your wires. Finish a panel in one sitting.</li>
+      </ul>
+    </div>
   </section>
 
   <aside class="panel">
-    <header>
-      <p class="eyebrow">LSN-ACCESS · Lesson 1 · Lab simulator</p>
-      <h1>Single-door wiring trainer</h1>
-      <p class="lede">Wire the reader, the lock, the door contact, and the exit button to the controller, then power on and test the door.</p>
-    </header>
-
     <section aria-labelledby="hSetup">
       <h2 id="hSetup">Panel setup</h2>
       <div class="seg" role="group" aria-label="Mode">
@@ -345,8 +398,7 @@
 
     <section aria-labelledby="hWire">
       <h2 id="hWire">Make a connection</h2>
-      <p class="note">Terminal labels on this trainer follow the DS-K2600 series style. Boards differ, so always follow the labels printed on your own board.</p>
-      <p class="picked" id="picked" aria-live="polite">On the board: click a wire end, then the terminal where it lands. Or use the lists below.</p>
+      <p class="picked" id="picked" aria-live="polite">Click a wire end on the board above, then the terminal where it lands. Or use the two lists below.</p>
       <div class="connect">
         <div class="row">
           <label for="selFrom">Wire end<select id="selFrom"></select></label>
@@ -357,8 +409,7 @@
           <button type="button" class="btn" id="btnClear">Remove all wires</button>
         </div>
       </div>
-      <h3 style="margin-top:14px">Wires on the panel <small id="wireCount">(0)</small></h3>
-      <ol class="wires" id="wireList" aria-label="Wires on the panel"></ol>
+      <p class="note" style="margin-top:10px">Terminal labels on this trainer follow the DS-K2600 series style. Boards differ, so on the real trainer follow the labels printed on your own board.</p>
     </section>
 
     <section aria-labelledby="hCheck">
@@ -371,20 +422,20 @@
       <p class="counter">Hints used: <b id="hintCount">0</b> (each hint costs 2 points)</p>
     </section>
 
-    <section class="narr" aria-live="polite">
-      <div class="narr-head"><span class="ptag" id="phaseTag">Ready</span><span id="ctx">Step 0 of 10</span></div>
-      <p id="narration">Wire the panel with the power off. When you are ready, press Power on and test.</p>
-    </section>
-    <div>
-      <div class="controls">
+    <section aria-labelledby="hTest">
+      <h2 id="hTest">Test the door</h2>
+      <div class="narr" aria-live="polite">
+        <div class="narr-head"><span class="ptag" id="phaseTag">Ready</span><span id="ctx">Step 0 of 10</span></div>
+        <p id="narration">Wire the panel with the power off. When you are ready, press Power on and test.</p>
+      </div>
+      <div class="controls" style="margin-top:10px">
         <button type="button" class="btn primary" id="btnRun">Power on and test</button>
         <button type="button" class="btn" id="btnStep">Step</button>
         <button type="button" class="btn" id="btnBack">Step back</button>
         <button type="button" class="btn" id="btnReset">Reset test</button>
       </div>
       <div class="speed" style="margin-top:12px"><label for="speed">Speed</label><input type="range" id="speed" min="0" max="4" step="1" value="2"><output id="speedOut">1×</output></div>
-      <p class="hint" style="margin-top:8px">Keyboard: Space steps, B steps back, R runs or pauses, + and - zoom, Esc cancels a pick.</p>
-    </div>
+    </section>
 
     <section class="scorecard" id="scoreCard" hidden aria-labelledby="hScore">
       <h2 id="hScore">Your score</h2>
@@ -394,15 +445,21 @@
       <p class="hint" id="scoreNote" style="margin-top:10px"></p>
     </section>
 
-    <section>
-      <h2>Live state</h2>
+    <section class="span-all" aria-labelledby="hWires">
+      <h2 id="hWires">Wires on the panel <small id="wireCount">(0)</small></h2>
+      <p class="note">Each row is one wire. A wire marked in coral is the one Check wiring found. Press <b>Remove</b> to take a wire off, then connect it again where it belongs.</p>
+      <ol class="wires" id="wireList" aria-label="Wires on the panel"></ol>
+    </section>
+
+    <section class="span-all" aria-labelledby="hLive">
+      <h2 id="hLive">Live state</h2>
       <div class="regs" id="regs"></div>
     </section>
     <div class="info" id="info" style="font-size:13.5px;color:var(--silk-dim)">Click any part on the board to learn what it does.</div>
     <section>
       <h2>Things to notice</h2>
       <ul class="notice">
-        <li>The relay is a dry contact. It only switches: the 12 V for the lock comes from the supply into COM1.</li>
+        <li>The relay is a dry contact: it only opens and closes. The 12 V for the lock comes from the supply into COM1.</li>
         <li>The fail safe mag lock goes on NC1, so it has power at rest. The fail secure strike goes on NO1, so it gets power only when access is granted.</li>
         <li>The band on the diode is the cathode. It goes to lock +. Put it in backward and it shorts the supply the moment the lock gets power.</li>
         <li>Swap green and white and every 0 arrives as a 1. The controller reads a different number and the parity check fails.</li>
@@ -417,6 +474,11 @@
 (function () {
 "use strict";
 const hasGSAP = typeof window.gsap !== 'undefined';
+// guide block: mark the current step (1-based) and say the single next action
+function guide(stepNo, nowHtml) {
+  document.querySelectorAll('#howSteps li').forEach(li => { const n = +li.dataset.h; li.classList.toggle('done', n < stepNo); li.classList.toggle('current', n === stepNo); });
+  if (nowHtml) document.getElementById('nowText').innerHTML = nowHtml;
+}
 const $ = s => document.querySelector(s);
 // LAB3D START: CBT 3D kit (modeled on the professor's "Tiny Machine Lab" reference, in CBT colors: navy board, gold traces). Paste as one block.
 // Needs Three.js r147 (three.min.js), examples/js/controls/OrbitControls.js, examples/js/renderers/CSS2DRenderer.js and GSAP 3.12.5.
@@ -644,11 +706,15 @@ function Lab3D(stage, opts) {
     if (name === 'overview' || !views[name]) {
       // the overview (and FIT) must show the whole board width, also on narrow phone screens,
       // leaving room for the zoom buttons at the right edge
-      const tanH = Math.tan(T.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
+      // and, on wide stages, fill the stage: the board fits both the width and the height of the view, no more, no less
+      const tanV = Math.tan(T.MathUtils.degToRad(camera.fov / 2)), tanH = tanV * camera.aspect;
+      const dist0 = pos.distanceTo(tgt), sinE = Math.max(0.3, (pos.y - tgt.y) / dist0);
       const need = (B.w / 2 + 0.5) / (tanH * 0.92) + B.d * 0.25;
-      f = Math.max(f, need / pos.distanceTo(tgt));
-      controls.maxDistance = Math.max(controls.maxDistance, need * 1.3);
-      if (scene.fog) { scene.fog.near = Math.max(scene.fog.near, need * 1.1); scene.fog.far = Math.max(scene.fog.far, need * 2.6); }
+      const needD = (B.d / 2 * sinE + 0.8) / (tanV * 0.78) + B.d * 0.25;   // 0.78 leaves room for the HUD bars at the top and bottom
+      f = Math.max(need, needD) / dist0;
+      const need2 = Math.max(need, needD);
+      controls.maxDistance = Math.max(controls.maxDistance, need2 * 1.3);
+      if (scene.fog) { scene.fog.near = Math.max(scene.fog.near, need2 * 1.1); scene.fog.far = Math.max(scene.fog.far, need2 * 2.6); }
     }
     pos.sub(tgt).multiplyScalar(f).add(tgt);
     return {pos: pos, tgt: tgt};
@@ -1063,8 +1129,8 @@ const C = {sky: '#38B0E0', gold: '#E0B840', coral: '#F0786A', green: '#6FD49B', 
 // ---- 3D board ----
 function Graphics3D(stage) {
   const lab = Lab3D(stage, {board: {w: BOARD.w, d: BOARD.d, silk: 'CBT TECHNOLOGY INSTITUTE  LSN-ACCESS  TRAINER PANEL 1', seed: 18},
-    views: {overview: {pos: [0, 19, 13], tgt: [0, 0, -0.4], want: 1.5}, terminals: {pos: [0.9, 12.5, 3.2], tgt: [0.9, 0, -4.2], want: 1.6},
-      door: {pos: [7.2, 8.5, 9], tgt: [9, 0, 1.8], want: 1.3}}});
+    views: {overview: {pos: [0, 19, 13], tgt: [0, 0, -0.4], want: 1.5}, terminals: {pos: [-0.6, 14.4, 3.6], tgt: [-0.6, 0, -4.2], want: 1.75},
+      door: {pos: [7.4, 11, 11.4], tgt: [9.3, 0, 2.3], want: 1.3}}});
   if (!lab) return null;
   const T = lab.T, scene = lab.scene, R = lab.recs;
   const lin = c => new T.Color(c).convertSRGBToLinear();   // hex colors are sRGB: convert so red stays red and black stays dark
@@ -1244,6 +1310,8 @@ function Graphics2D(stage) {
 
 // ---- app state ----
 let mode = 'build', lock = 'strike', conns = [], hints = 0, hunt = null, pending = null, issue = null, hintShown = false, flagged = null;
+let checkedClean = false, huntTested = false;
+const passedLocks = {strike: false, mag: false};
 const freshTest = () => ({step: 0, phase: null, sim: {power: false, relay: false, doorOpen: false, button: false}, clock: 0, tests: [false, false, false, false, false, false, false],
   card: null, granted: false, feedback: 'standby', alarm: false, alarmRaised: false, tripped: false, score: null});
 let S = freshTest(), hist = [], tl = null, running = false, timer = null, speed = 1, follow = true, G = null;
@@ -1436,16 +1504,16 @@ function renderScore() {
     + row('Fail mode matches the ' + LK(), sc.fail + ' / 15') + row('Diode across the lock, band on +', sc.diode + ' / 10')
     + row('Tests passed (' + sc.passed + ' of 7)', sc.tests + ' / 35') + row('Hints used (' + hints + ')', sc.penalty ? '-' + sc.penalty : '0') + row('Total', sc.total + ' / 100', 'sum');
   $('#testList').innerHTML = TESTS.map((t, i) => '<li class="' + (S.tests[i] ? 'pass' : 'fail') + '">' + t + '</li>').join('');
-  $('#scoreNote').textContent = sc.total === 100 ? 'Full marks. Now try the other lock, or load a fault hunt.' : 'Fix what failed, then press Power on and test again. ' + (lock === 'strike' ? 'Then rewire for the magnetic lock.' : '');
+  $('#scoreNote').textContent = sc.total === 100 ? 'Full marks. Now try the other lock, or press Fault hunt.' : sc.passed === 7 ? 'Every check passed; hints and wiring cost the missing points.' : 'A FAIL line names what did not work. Press Check wiring to find the cause, fix it, then press Power on and test again.';
 }
 function setPhase(p) { document.querySelectorAll('.phases li').forEach(li => li.classList.toggle('on', li.dataset.p === p)); const li = document.querySelector('.phases li[data-p="' + p + '"]'); $('#phaseTag').textContent = li ? li.textContent : 'Ready'; $('#phaseTag').style.setProperty('--pc', li ? getComputedStyle(li).getPropertyValue('--c') : 'var(--silk-dim)'); }
 function render() {
   $('#hudStep').textContent = S.step; $('#hudClock').textContent = 't = ' + S.clock + ' s'; $('#ctx').textContent = 'Step ' + S.step + ' of ' + STEPS.length;
   $('#btnBack').disabled = !hist.length; $('#btnStep').disabled = S.step >= STEPS.length;
   $('#btnRun').textContent = running ? 'Pause' : S.step >= STEPS.length ? 'Test again' : S.step ? 'Continue test' : 'Power on and test';
-  applyView(); renderRegs(); renderScore();
+  applyView(); renderRegs(); renderScore(); updateGuide();
 }
-function finish() { tl = null; S.step++; render(); if (running) { if (S.step >= STEPS.length) stop(); else timer = setTimeout(stepFwd, 450 / speed); } }
+function finish() { tl = null; S.step++; if (S.step >= STEPS.length && mode === 'hunt') huntTested = true; render(); if (running) { if (S.step >= STEPS.length) stop(); else timer = setTimeout(stepFwd, 450 / speed); } }
 function stepFwd(animated) {
   if (tl) { tl.progress(1); return; }
   if (S.step >= STEPS.length) return;
@@ -1473,21 +1541,22 @@ fillSelect($('#selTo'), GROUPS.slice(6).concat(GROUPS.slice(0, 6)));
 const short = id => PINS[id].part === 'ct' ? PINS[id].nm + ' (' + PINS[id].grp + ')' : PINS[id].full;
 function renderWires() {
   $('#wireCount').textContent = '(' + conns.length + ')';
-  $('#wireList').innerHTML = conns.map((c, i) => '<li' + (flagged === i ? ' class="flag"' : '') + '><span class="sw" style="--c:' + wireColor(c[0], c[1]) + '"></span><span>' + short(c[0]) + ' to ' + short(c[1]) + '</span><button type="button" class="btn" data-rm="' + i + '" aria-label="Remove wire ' + short(c[0]) + ' to ' + short(c[1]) + '">Remove</button></li>').join('');
+  $('#wireList').innerHTML = conns.map((c, i) => '<li' + (flagged === i ? ' class="flag"' : '') + '><span class="no">' + (i + 1) + '</span><span class="sw" style="--c:' + wireColor(c[0], c[1]) + '"></span><span>' + short(c[0]) + ' to ' + short(c[1]) + '</span><button type="button" class="btn" data-rm="' + i + '" aria-label="Remove wire ' + short(c[0]) + ' to ' + short(c[1]) + '">Remove</button></li>').join('');
   G.setWires(conns, flagged);
 }
 function nextFree() { const used = new Set(conns.flat()); const ids = GROUPS.slice(0, 6).flatMap(g => g[1]); return ids.find(id => !used.has(id) && id !== 'psu.p' && id !== 'psu.n') || null; }
 function wiringChanged() {
-  flagged = null; issue = null; hintShown = false; $('#btnHint').disabled = true; $('#checkOut').hidden = true;
+  flagged = null; issue = null; hintShown = false; checkedClean = false; $('#btnHint').disabled = true; $('#checkOut').hidden = true;
   renderWires(); resetTest('Wiring changed. Press Power on and test when you are ready.');
   if (mode === 'hunt' && hunt && !hunt.fixed && conns.length && checkWiring(conns, lock).issues.length === 0) {
     hunt.fixed = true;
-    huntMsg('<p><b>All fixed.</b> You found and fixed every fault on this panel: ' + hunt.faults.map(f => FAULTS[f].nm).join(' and ') + '. Run the test to prove it.</p>');
+    huntMsg('<p><b>All fixed.</b> You found and fixed every fault on this panel: ' + hunt.faults.map(f => FAULTS[f].nm).join(' and ') + '. Press Power on and test to prove it.</p>');
+    updateGuide();
   }
 }
 function connect(a, b) {
-  if (!a || !b || a === b) { say('Pick two different points.'); return false; }
-  if (conns.some(c => (c[0] === a && c[1] === b) || (c[0] === b && c[1] === a))) { say('That wire is already on the panel.'); return false; }
+  if (!a || !b || a === b) { say('Pick two different points: a wire end first, then the terminal where it lands.'); return false; }
+  if (conns.some(c => (c[0] === a && c[1] === b) || (c[0] === b && c[1] === a))) { say('That wire is already on the panel. Pick a different wire end or terminal.'); return false; }
   conns.push([a, b]); wiringChanged();
   say('Connected ' + short(a) + ' to ' + short(b) + '.');
   const nf = nextFree(); if (nf) $('#selFrom').value = nf;
@@ -1495,7 +1564,7 @@ function connect(a, b) {
 }
 function removeWire(i) { const c = conns[i]; if (!c) return; conns.splice(i, 1); wiringChanged(); say('Removed ' + short(c[0]) + ' to ' + short(c[1]) + '.'); }
 function say(t) { $('#picked').innerHTML = t; }
-function setPending(id) { pending = id; G.pending(id); if (id) { say('Picked <b>' + short(id) + '</b>. Now pick where it lands. Press Esc to cancel.'); $('#selFrom').value = id; } }
+function setPending(id) { pending = id; G.pending(id); if (id) { say('Picked <b>' + short(id) + '</b>. Now click the terminal where it lands. Press Esc to cancel.'); $('#selFrom').value = id; } updateGuide(); }
 function pinInfo(id) {
   const p = PINS[id], on = conns.filter(c => c.includes(id)).map(c => short(c[0] === id ? c[1] : c[0]));
   return '<b>' + short(id) + '.</b> ' + (on.length ? 'Wired to ' + on.join(' and ') + '.' : 'Nothing is wired here yet.') + (INFO[p.part] && p.part !== 'ct' && p.part !== 'psu' ? ' ' + (p.part === 'lk' ? INFO[lock] : INFO[p.part]) : '');
@@ -1513,25 +1582,29 @@ function showCheck(html, kind) { const o = $('#checkOut'); o.hidden = false; o.c
 function check() {
   const ck = checkWiring(conns, lock);
   hintShown = false;
-  if (!ck.issues.length) { issue = null; flagged = null; renderWires(); $('#btnHint').disabled = true; showCheck('<p>All ' + ck.total + ' connections are right for the ' + LK() + '. Press Power on and test.</p>', 'ok'); return ck; }
+  if (!ck.issues.length) { issue = null; flagged = null; checkedClean = true; renderWires(); $('#btnHint').disabled = true; showCheck('<p>All ' + ck.total + ' connections are right for the ' + LK() + '. Press Power on and test.</p>', 'ok'); updateGuide(); return ck; }
   issue = ck.issues[0];
   const n = ck.issues.length;
   if (mode === 'hunt') {
     flagged = null; renderWires();
-    showCheck('<p>' + n + ' problem' + (n > 1 ? 's' : '') + ' left on this panel. Run the test to see the symptoms, then look at the wires. Show hint points to the first one.</p>', 'bad');
+    showCheck('<p>' + n + ' problem' + (n > 1 ? 's' : '') + ' left on this panel. Run the test to see the symptoms, then look at the wire list below. Press Show hint to mark the first one (each hint costs 2 points).</p>', 'bad');
   } else {
     flagged = issue.conn ? conns.indexOf(issue.conn) : null; renderWires();
-    showCheck('<p>' + n + ' item' + (n > 1 ? 's' : '') + ' to fix. First: ' + issue.msg + '</p>' + (flagged !== null && flagged >= 0 ? '<p>The wire is marked in coral on the board and in the list.</p>' : ''), 'bad');
+    showCheck('<p>' + n + ' item' + (n > 1 ? 's' : '') + ' to fix. First: ' + issue.msg + '</p>' + (flagged !== null && flagged >= 0
+      ? '<p>That wire is marked in coral on the board and in the wire list below. Press Remove next to it, then connect it where it belongs.</p>'
+      : '<p>Connect the missing wire, then press Check wiring again. Press Show hint to see where it goes (each hint costs 2 points).</p>'), 'bad');
   }
   $('#btnHint').disabled = false;
+  updateGuide();
   return ck;
 }
 function hint() {
   if (!issue || hintShown) return;
   hints++; hintShown = true; $('#hintCount').textContent = hints;
   if (mode === 'hunt') { flagged = issue.conn ? conns.indexOf(issue.conn) : null; renderWires(); }
-  showCheck('<p>' + issue.msg + '</p><p>Hint: ' + issue.hint + '</p>', 'info');
+  showCheck('<p>' + issue.msg + '</p><p>Hint: ' + issue.hint + '</p><p>Make the fix, then press Check wiring again.</p>', 'info');
   $('#btnHint').disabled = true;
+  updateGuide();
 }
 
 // ---- modes ----
@@ -1553,16 +1626,77 @@ function loadHunt(lk, ids) {
     const n = Math.random() < 0.5 ? 1 : 2; ids = [];
     while (ids.length < n) { const f = pool[Math.floor(Math.random() * pool.length)]; if (!ids.includes(f)) ids.push(f); }
   }
-  hunt = {lock: lk, faults: ids, fixed: false};
+  hunt = {lock: lk, faults: ids, fixed: false}; huntTested = false;
   setMode('hunt'); setLock(lk, true); hints = 0; $('#hintCount').textContent = '0';
   conns = faulted(lk, ids); setPending(null);
   wiringChanged();
-  huntMsg('<p>A new technician at Palmetto Dental wired this ' + (lk === 'mag' ? 'magnetic lock' : 'electric strike') + ' panel. It has ' + (ids.length === 1 ? 'one fault' : 'two faults') + '. Run the test to see the symptoms, then find and fix ' + (ids.length === 1 ? 'it' : 'them') + ' in the wire list or on the board. Press Fault hunt again for a new panel.</p>');
-  say('Fault hunt loaded. Remove a wrong wire with Remove, then connect it where it belongs.');
+  huntMsg('<p>A new technician at Palmetto Dental wired this ' + (lk === 'mag' ? 'magnetic lock' : 'electric strike') + ' panel. It has ' + (ids.length === 1 ? 'one fault' : 'two faults') + '. Press Power on and test to see the symptoms. Then find and fix ' + (ids.length === 1 ? 'it' : 'them') + ' in the wire list below or on the board. Press Fault hunt again for a new panel.</p>');
+  say('Fault hunt loaded. Press Remove on a wrong wire, then connect it where it belongs.');
 }
 function buildMode() {
   hunt = null; setMode('build'); huntMsg(''); conns = []; hints = 0; $('#hintCount').textContent = '0'; setPending(null); wiringChanged();
-  say('Empty panel. Pick a wire end, then a terminal.'); const nf = nextFree(); if (nf) $('#selFrom').value = nf;
+  say('Empty panel. Click a wire end, then the terminal where it lands.'); const nf = nextFree(); if (nf) $('#selFrom').value = nf;
+}
+
+// ---- the "Do this now" line: always the single next action ----
+const NOW_WIRE = {
+  'psu.p|ct.p12': 'Connect the supply <b>+12V</b> to <b>+12V</b> in the controller POWER block.',
+  'psu.n|ct.gnd': 'Connect the supply <b>GND</b> to <b>GND</b> in the controller POWER block.',
+  'rd.red|ct.r12': 'Connect the reader red wire (+12V) to <b>+12V</b> in the READER 1 block.',
+  'rd.blk|ct.rgnd': 'Connect the reader black wire (ground) to <b>GND</b> in the READER 1 block.',
+  'rd.grn|ct.w0': 'Connect the reader green wire (data 0) to <b>W0</b>.',
+  'rd.wht|ct.w1': 'Connect the reader white wire (data 1) to <b>W1</b>.',
+  'rd.org|ct.ok': 'Connect the reader orange wire (green LED) to <b>OK</b>.',
+  'rd.brn|ct.err': 'Connect the reader brown wire (red LED) to <b>ERR</b>.',
+  'rd.yel|ct.bz': 'Connect the reader yellow wire (beeper) to <b>BZ</b>.',
+  'psu.p|ct.com1': 'Feed the relay: connect the supply <b>+12V</b> to <b>COM1</b> (relay common) in the LOCK 1 block.',
+  'ct.no1|lk.p': 'Connect <b>NO1</b> (normally open) to <b>lock +</b>. The fail secure strike must get power only while the relay is on.',
+  'ct.nc1|lk.p': 'Connect <b>NC1</b> (normally closed) to <b>lock +</b>. The fail safe mag lock must have power at rest and lose it when the relay turns on.',
+  'lk.n|psu.n': 'Connect <b>lock -</b> back to the supply <b>GND</b>.',
+  'di.k|lk.p': 'Connect the diode band, the cathode (<b>K</b>), to <b>lock +</b>.',
+  'di.a|lk.n': 'Connect the diode anode (<b>A</b>) to <b>lock -</b>.',
+  'dc.1|ct.dcont': 'Connect door contact lead 1 to <b>D-CONT1</b> in the DOOR 1 block.',
+  'dc.2|ct.dgnd': 'Connect door contact lead 2 to <b>GND</b> in the DOOR 1 block.',
+  'eb.1|ct.exit': 'Connect exit button lead 1 to <b>EXIT1</b> in the EXIT 1 block.',
+  'eb.2|ct.egnd': 'Connect exit button lead 2 to <b>GND</b> in the EXIT 1 block.'
+};
+const LOCK_NAME = l => l === 'mag' ? 'Magnetic lock' : 'Electric strike';
+function updateGuide() {
+  if (!$('#howSteps') || !G) return;
+  const done = S.step >= STEPS.length && !!S.score, testStep = mode === 'hunt' ? 5 : 4;
+  if (running) { guide(testStep, 'The test is running. Watch the board above and read each step under <b>Test the door</b> below. Press <b>Pause</b> to stop it.'); return; }
+  if (S.step > 0 && !done) { guide(testStep, 'Test step ' + S.step + ' of ' + STEPS.length + ' is done. Read it under <b>Test the door</b> below, then press <b>Step</b> for the next one, or <b>Continue test</b> to play the rest.'); return; }
+  if (pending) { guide(mode === 'hunt' ? 5 : 2, 'Now click the terminal where <b>' + short(pending) + '</b> lands. Press Esc to cancel the pick.'); return; }
+  const ck = checkWiring(conns, lock), clean = ck.issues.length === 0;
+  if (mode === 'hunt') {
+    if (done && clean) guide(6, 'Fault hunt solved: ' + S.score.total + ' out of 100. Press <b>Fault hunt</b> for another panel, or <b>Wire from scratch</b> to start over.');
+    else if (clean) guide(5, 'Every fault is fixed. Press <b>Power on and test</b> to prove the panel works.');
+    else if (done || huntTested) guide(5, 'Find the fault. Compare the FAIL lines in <b>Your score</b> with the wire list below. Press <b>Remove</b> on a wrong wire, then connect it where it belongs.');
+    else guide(5, 'Press <b>Power on and test</b> and watch the board for the symptoms of the fault.');
+    return;
+  }
+  if (done) {
+    const sc = S.score, other = lock === 'strike' ? 'mag' : 'strike';
+    if (sc.passed === 7 && clean) passedLocks[lock] = true;
+    if (passedLocks.strike && passedLocks.mag) guide(5, 'Both locks pass (this test: ' + sc.total + ' out of 100). Now press <b>Fault hunt</b> under Panel setup below.');
+    else if (sc.passed === 7 && clean) guide(1, 'The ' + LOCK_NAME(lock).toLowerCase() + ' passes all 7 checks (' + sc.total + ' out of 100). Now choose <b>' + LOCK_NAME(other) + '</b> under Panel setup below and rewire for it.');
+    else guide(3, sc.passed + ' of 7 checks passed. Read the FAIL lines in <b>Your score</b> below, then press <b>Check wiring</b> to find the cause.');
+    return;
+  }
+  const bad = ck.issues.find(i => i.kind !== 'missing');
+  if (bad) {
+    if (issue && issue.kind !== 'missing') guide(3, 'Press <b>Remove</b> next to the coral wire in the wire list below, then connect it where it belongs. Stuck? Press <b>Show hint</b> (it costs 2 points).');
+    else guide(3, (bad.kind === 'short' ? 'Your wiring has a short circuit.' : 'A wire is on the wrong terminal for the ' + LK() + '.') + ' Press <b>Check wiring</b> to mark it in coral.');
+    return;
+  }
+  const f = wiringUF(canon(conns, lock)).f, miss = expected(lock).find(e => f(e.a) !== f(e.b));
+  if (miss) {
+    const how = conns.length < 2 ? ' Click the two points on the board above, or choose them in <b>Wire end</b> and <b>Terminal</b> below and press <b>Connect</b>.' : '';
+    guide(2, (conns.length ? '' : 'The <b>' + LOCK_NAME(lock) + '</b> is chosen under Panel setup. ') + (NOW_WIRE[miss.a + '|' + miss.b] || miss.hint) + how);
+    return;
+  }
+  if (!checkedClean) guide(3, 'All ' + ck.total + ' wires are on the panel. Press <b>Check wiring</b> to confirm them.');
+  else guide(4, 'Press <b>Power on and test</b>. Watch the board above and read each step under <b>Test the door</b> below.');
 }
 
 // ---- start ----
@@ -1590,7 +1724,7 @@ document.addEventListener('keydown', e => { const t = e.target && e.target.tagNa
   if (e.key === 'Escape' && pending) { setPending(null); say('Pick cancelled.'); return; }
   if (t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA' || t === 'BUTTON' || (e.target && e.target.closest && e.target.closest('.pin'))) return;
   if (e.key === ' ') { e.preventDefault(); stop(); stepFwd(true); } else if (e.key === 'b' || e.key === 'B') back(); else if (e.key === 'r' || e.key === 'R') $('#btnRun').click(); });
-setLock('strike', true); renderWires(); render();
+setLock('strike', true); renderWires(); render(); updateGuide();
 const nf0 = nextFree(); if (nf0) $('#selFrom').value = nf0;
 // for tests: read the state and drive the same functions the buttons use
 window.__wt = {get conns() { return conns.map(c => c.slice()); }, get lock() { return lock; }, get hunt() { return hunt; }, get state() { return S; }, get hints() { return hints; },

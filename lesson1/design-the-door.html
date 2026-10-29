@@ -234,6 +234,33 @@
     .controls{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
   @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---- stacked layout (v2, October 29 2026): the board uses the full width of the page, instructions and controls go below it ---- */
+  .app{display:block;height:auto;min-height:0}
+  .app>.lab-head{max-width:1240px;margin:0 auto;padding:18px 16px 14px}
+  .app>.lab-head h1{font-size:clamp(24px,3vw,32px);margin:4px 0 6px}
+  .app>.stage{width:100%;height:clamp(420px,70vh,860px);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .panel{max-width:1240px;margin:0 auto;border-left:0;overflow:visible;background:none;display:block;columns:2 420px;column-gap:28px;padding:20px 16px 28px}
+  .panel>*{break-inside:avoid;margin:0 0 22px}
+  .panel>header,.panel>footer,.panel>.guide,.panel>.span-all{column-span:all}
+  /* how to use: numbered steps with the current one highlighted, plus a "do this now" line */
+  .guide{max-width:1240px;margin:0 auto;padding:18px 16px 4px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px 26px;align-items:start}
+  .guide h2{grid-column:1/-1;margin:0;font-size:18px}
+  .guide ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:s}
+  .guide ol.steps li{counter-increment:s;position:relative;padding:8px 10px 8px 44px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--silk);font-size:15px;line-height:1.45}
+  .guide ol.steps li::before{content:counter(s);position:absolute;left:10px;top:8px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:700 13px var(--font-mono);background:var(--line);color:var(--silk)}
+  .guide ol.steps li.current{border-color:var(--cbt-gold);background:var(--panel-2)}
+  .guide ol.steps li.current::before{background:var(--cbt-gold);color:var(--cbt-navy)}
+  .guide ol.steps li.done{color:var(--silk-dim)}
+  .guide ol.steps li.done::before{content:"\2713";background:var(--ok);color:#06120f}
+  .guide ol.steps li b,.guide .now b{color:var(--cbt-gold);font-weight:600}
+  .guide .now{border-left:4px solid var(--cbt-sky);background:var(--panel-2);border-radius:6px;padding:14px 16px;font-size:16px;line-height:1.5;color:var(--silk)}
+  .guide .now .k{display:block;font:600 10.5px var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--cbt-sky);margin-bottom:4px}
+  .guide .tips{margin:10px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--silk-dim);display:grid;gap:4px}
+  @media(max-width:860px){.guide{grid-template-columns:1fr}.panel{columns:1}}
+  /* page mode: board card on top across the full width, the round or task below */
+  .card .stage.wide{aspect-ratio:21/9;min-height:360px}
+  @media(max-width:860px){.card .stage.wide{aspect-ratio:4/3;min-height:0}}
   /* ===== end of theme ===== */
 
   /* page-specific CSS below (page mode challenge) */
@@ -260,6 +287,15 @@
   #resTable td.pts.ok{color:var(--ok)} #resTable td.pts.part{color:var(--warn)} #resTable td.pts.bad{color:var(--bad)}
   #resTable tr.tot td{border-bottom:0;padding-top:10px}
   @media(max-width:520px){.qhead{padding-right:0}.qhead h2{padding-right:70px}}
+  /* phones: the zoom and pan buttons sit in one row under the board, so they do not cover the door at the right edge */
+  @media(max-width:640px){
+    .card .stage .zoomctl{top:auto;bottom:4px;right:50%;transform:translateX(50%);flex-direction:row;align-items:center;padding:2px;gap:1px}
+    .card .stage .zoomctl>button{width:30px!important;height:28px!important;font-size:16px}
+    .card .stage .zoomctl>button.fit{width:36px!important;font-size:9px}
+    .card .stage .zoomctl .pad{display:flex!important;gap:1px;margin:0 2px;padding:0 2px;border-top:0;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+    .card .stage .zoomctl .pad button{width:28px!important;height:28px!important;font-size:10px}
+    .card .stage .zoomctl .pad .l{order:1}.card .stage .zoomctl .pad .u{order:2}.card .stage .zoomctl .pad .c{order:3}.card .stage .zoomctl .pad .d{order:4}.card .stage .zoomctl .pad .r{order:5}
+  }
 </style>
 </head>
 <body>
@@ -275,29 +311,39 @@
     <div><span class="eyebrow">LSN-ACCESS · Lesson 1 · Challenge</span><h1>Design the door</h1><p class="lede">Ten doors at Palmetto Dental Group. Pick the lock, the reader, and the layout that keep people safe and keep the wrong people out.</p></div>
     <div class="spec"><div><b id="specRounds">10</b><span>rounds, 10 points each</span></div><div><b>100</b><span>points</span></div><div><b>Partial</b><span>credit where fair</span></div><div><b>Shuffled</b><span>every attempt</span></div></div>
   </section>
-  <details class="howto reveal" style="--i:1"><summary>How this challenge works</summary>
-    <ol><li>Read the situation. The board shows the door, and the part marked ? is the one you choose.</li><li>Pick an answer and press Check to see your points and why.</li><li>Press Play (or Step and Back) to watch the best design work on the board: green when your answer was the best, coral when it needs review.</li><li>Finish all ten rounds, review the results table, and try again.</li></ol>
-    <p class="muted howto-note">Words to know: fail safe means the lock opens when power is lost; fail secure means it stays locked. REX means request to exit. The AHJ (authority having jurisdiction) is the official, often the fire marshal, who approves the design under the local building and fire code.</p>
-  </details>
-  <div class="grid two">
-    <section class="card reveal" style="--i:2" data-ref="U1 · ROUND">
-      <div class="progress" id="prog"></div>
-      <div class="qhead"><h2 id="qTitle">Round 1</h2><span class="pill" id="qTopic"></span></div>
-      <p id="qText" class="qtext"></p>
-      <div class="opts" id="opts"></div>
-      <div class="stepper"><button class="btn primary" id="btnCheck" type="button">Check</button><button class="btn" id="btnNext" type="button" disabled>Next round</button></div>
-      <div id="fb" aria-live="polite"></div>
-    </section>
-    <aside class="card reveal" style="--i:3" data-ref="U2 · BOARD">
-      <h2>Watch it on the board</h2>
-      <p class="doorname"><span class="muted">Door:</span> <b id="doorName"></b></p>
-      <div class="stage" id="stage"><div class="nogl" id="nogl" hidden>Flat board (no 3D here). Same steps.</div></div>
-      <div class="legend boardlegend"><span style="--c:#E0B840"><i></i>12 V power</span><span style="--c:#38B0E0"><i></i>card data</span><span style="--c:#A9B4FF"><i></i>inputs</span><span style="--c:#9FE7FF"><i></i>network</span><span style="--c:#6FD49B"><i></i>your answer was best</span><span style="--c:#F0786A"><i></i>review</span></div>
-      <div class="caption" id="cap" aria-live="polite"><div class="t" id="capT">Ready</div><p id="capB" style="margin:0">After you check an answer, press Play to see why.</p></div>
-      <div class="stepper"><button class="btn" id="btnBack" type="button" disabled>Back</button><button class="btn" id="btnStep" type="button" disabled>Step</button><button class="btn go" id="btnPlay" type="button" disabled>Play the explanation</button></div>
-      <div class="score" style="margin-top:14px"><span class="big" id="score">0</span><span>points so far, out of 100</span></div>
-    </aside>
-  </div>
+  <section class="card reveal" style="--i:1" id="boardCard" data-ref="U1 · BOARD">
+    <h2>Watch it on the board</h2>
+    <p class="doorname"><span class="muted">Door:</span> <b id="doorName"></b></p>
+    <div class="stage wide" id="stage"><div class="nogl" id="nogl" hidden>The 3D view is not available here, so this flat board shows the same door and the same steps.</div></div>
+    <div class="legend boardlegend"><span style="--c:#E0B840"><i></i>12 V power</span><span style="--c:#38B0E0"><i></i>card data, or the part you choose</span><span style="--c:#A9B4FF"><i></i>inputs</span><span style="--c:#9FE7FF"><i></i>network</span><span style="--c:#6FD49B"><i></i>your answer was best</span><span style="--c:#F0786A"><i></i>review the best answer</span></div>
+    <div class="caption" id="cap" aria-live="polite"><div class="t" id="capT">Ready</div><p id="capB" style="margin:0">Pick your answer in the round below and press Check. Then press Play the explanation to watch the best design work here.</p></div>
+    <div class="stepper"><button class="btn" id="btnBack" type="button" disabled>Step back</button><button class="btn" id="btnStep" type="button" disabled>Step</button><button class="btn go" id="btnPlay" type="button" disabled>Play the explanation</button><span class="score" style="margin-left:auto"><span class="big" id="score">0</span><span>points so far, out of 100</span></span></div>
+  </section>
+  <section class="guide reveal" style="--i:2;padding:18px 0 16px" aria-labelledby="guideTitle">
+    <h2 id="guideTitle">How this challenge works</h2>
+    <ol class="steps" id="howSteps">
+      <li data-h="1">Read the situation in the round card below. The board above shows that door. The part marked <b>?</b>, outlined in blue, is the part you choose.</li>
+      <li data-h="2">Click the answer you think is best (A, B, C, or D). Then press <b>Check</b>. Your points and the reason appear under the answers. A partly right answer earns some points.</li>
+      <li data-h="3">Press <b>Play the explanation</b> to watch the best design work on the board above. Green means your answer was the best. Coral means you should review the best answer. Use <b>Step</b> and <b>Step back</b> to go at your own pace.</li>
+      <li data-h="4">Press <b>Next round</b>. There are 10 rounds, worth 10 points each, and your total shows under the board.</li>
+      <li data-h="5">After round 10, press <b>See results</b>. Review the table, then press <b>Try again</b> for a new order of rounds and answers.</li>
+    </ol>
+    <div>
+      <div class="now" aria-live="polite"><span class="k">Do this now</span><span id="nowText">Read round 1 below and click the answer you think is best.</span></div>
+      <ul class="tips">
+        <li>Words to know: fail safe means the lock opens when power is lost. Fail secure means it stays locked. REX means request to exit. The AHJ (authority having jurisdiction) is the official, often the fire marshal, who approves the design under the local building and fire code.</li>
+        <li>Drag on the board to turn it. Use <b>+</b>, <b>&minus;</b>, the arrows, and <b>FIT</b> on the board to look closer. <b>FIT</b> shows the whole board again.</li>
+      </ul>
+    </div>
+  </section>
+  <section class="card reveal" style="--i:3" id="roundCard" data-ref="U2 · ROUND">
+    <div class="progress" id="prog"></div>
+    <div class="qhead"><h2 id="qTitle">Round 1</h2><span class="pill" id="qTopic"></span></div>
+    <p id="qText" class="qtext"></p>
+    <div class="opts" id="opts"></div>
+    <div class="stepper" id="roundBtns"><button class="btn primary" id="btnCheck" type="button">Check</button><button class="btn go" id="btnPlay2" type="button" disabled>Play the explanation</button><button class="btn" id="btnNext" type="button" disabled>Next round</button></div>
+    <div id="fb" aria-live="polite"></div>
+  </section>
   <section class="card reveal" style="--i:4;margin-top:14px" id="results" hidden data-ref="U3 · RESULTS">
     <h2>Your results</h2>
     <p class="muted" id="resNote" style="margin:0 0 10px"></p>
@@ -311,6 +357,11 @@
 (function () {
 "use strict";
 const hasGSAP = typeof window.gsap !== 'undefined';
+// guide block: mark the current step (1-based) and say the single next action
+function guide(stepNo, nowHtml) {
+  document.querySelectorAll('#howSteps li').forEach(li => { const n = +li.dataset.h; li.classList.toggle('done', n < stepNo); li.classList.toggle('current', n === stepNo); });
+  if (nowHtml) document.getElementById('nowText').innerHTML = nowHtml;
+}
 const $ = s => document.querySelector(s);
 // LAB3D START: CBT 3D kit (modeled on the professor's "Tiny Machine Lab" reference, in CBT colors: navy board, gold traces). Paste as one block.
 // Needs Three.js r147 (three.min.js), examples/js/controls/OrbitControls.js, examples/js/renderers/CSS2DRenderer.js and GSAP 3.12.5.
@@ -538,11 +589,15 @@ function Lab3D(stage, opts) {
     if (name === 'overview' || !views[name]) {
       // the overview (and FIT) must show the whole board width, also on narrow phone screens,
       // leaving room for the zoom buttons at the right edge
-      const tanH = Math.tan(T.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
+      // and, on wide stages, fill the stage: the board fits both the width and the height of the view, no more, no less
+      const tanV = Math.tan(T.MathUtils.degToRad(camera.fov / 2)), tanH = tanV * camera.aspect;
+      const dist0 = pos.distanceTo(tgt), sinE = Math.max(0.3, (pos.y - tgt.y) / dist0);
       const need = (B.w / 2 + 0.5) / (tanH * 0.92) + B.d * 0.25;
-      f = Math.max(f, need / pos.distanceTo(tgt));
-      controls.maxDistance = Math.max(controls.maxDistance, need * 1.3);
-      if (scene.fog) { scene.fog.near = Math.max(scene.fog.near, need * 1.1); scene.fog.far = Math.max(scene.fog.far, need * 2.6); }
+      const needD = (B.d / 2 * sinE + 0.8) / (tanV * 0.78) + B.d * 0.25;   // 0.78 leaves room for the HUD bars at the top and bottom
+      f = Math.max(need, needD) / dist0;
+      const need2 = Math.max(need, needD);
+      controls.maxDistance = Math.max(controls.maxDistance, need2 * 1.3);
+      if (scene.fog) { scene.fog.near = Math.max(scene.fog.near, need2 * 1.1); scene.fog.far = Math.max(scene.fog.far, need2 * 2.6); }
     }
     pos.sub(tgt).multiplyScalar(f).add(tgt);
     return {pos: pos, tgt: tgt};
@@ -863,15 +918,27 @@ function cfgAfter(R, upto) { let c = merge(merge(DEF, R.pre), R.post); for (let 
 
 // ---- board: 3D with the Lab3D kit, or a flat SVG with the same layout ----
 function board3D(stage) {
+  // on the wide desktop stage (about 21:9) the whole board fits the height first, so a closer "wide" view fills the stage;
+  // FIT returns to it. Narrow stages (phones, 4:3) keep the kit overview, which always shows the whole board width.
+  const WIDE = {pos: [0.55, 9.6, 6.0], tgt: [0.55, 0, 0.35], want: 2.0};
+  const isWide = stage.clientWidth / Math.max(1, stage.clientHeight) > 1.9;
   const lab = Lab3D(stage, {board: {w: 12.4, d: 7.4, silk: 'PALMETTO DENTAL GROUP  DOOR DESIGN  LSN-ACCESS', seed: 7},
-    views: {overview: {pos: [0.55, 12, 7.4], tgt: [0.55, 0, 0.35], want: 1.5}}});
+    views: {overview: {pos: [0.55, 12, 7.4], tgt: [0.55, 0, 0.35], want: 1.5}, wide: WIDE}, fitView: isWide ? 'wide' : 'overview'});
   if (!lab) return null;
   const mats = {}, recs = {};
   Object.entries(LINK).forEach(([k, l]) => { mats[k] = lab.busMat(C[l.k]); lab.trace(l.p, l.n, mats[k]); });
   Object.entries(COMP).forEach(([k, o]) => { recs[k] = lab.chip(k, o); });
   lab.zone('outside', 5.0, -1.25, C.data); lab.zone('inside', 5.0, 1.25, C.input);
   lab.silkRect(4.0, 6.0, -0.06, 0.06);
-  lab.finishPins(); lab.intro();
+  lab.finishPins();
+  if (!isWide) lab.intro();
+  else {
+    lab.camera.position.set(...WIDE.pos); lab.controls.target.set(...WIDE.tgt);
+    if (!RM) {
+      gsap.from(lab.camera.position, {x: WIDE.pos[0] - 4, y: WIDE.pos[1] + 12, z: WIDE.pos[2] + 10, duration: 1.8, ease: 'power3.out'});
+      gsap.from(Object.values(lab.recs).map(rc => rc.g.position), {y: 2.2, duration: 0.7, ease: 'back.out(1.6)', stagger: 0.03, delay: 0.2});
+    }
+  }
   return {
     config(cfg) { Object.keys(cfg).forEach(k => { const rec = recs[k], v = cfg[k]; rec.el.querySelector('.nm').textContent = v.nm; rec.val.textContent = v.val; rec.sub.textContent = v.sub || ''; }); },
     mark(keys, color) { lab.clear(); keys.forEach(k => lab.hi(recs[k], color)); },
@@ -948,8 +1015,18 @@ function verdict() { const l = log[r]; return l && l.pts === l.max; }
 function stepColor() { return verdict() ? C.ok : C.bad; }
 function setStepButtons() {
   const R = ROUNDS[order[r]], checked = !!log[r];
-  $('#btnPlay').disabled = !checked || playing; $('#btnBack').disabled = !checked || playing || si <= 0; $('#btnStep').disabled = !checked || playing || si >= R.steps.length - 1;
-  $('#btnPlay').textContent = playing ? 'Playing...' : si >= R.steps.length - 1 ? 'Play again' : 'Play the explanation';
+  $('#btnPlay').disabled = $('#btnPlay2').disabled = !checked || playing; $('#btnBack').disabled = !checked || playing || si <= 0; $('#btnStep').disabled = !checked || playing || si >= R.steps.length - 1;
+  $('#btnPlay').textContent = $('#btnPlay2').textContent = playing ? 'Playing...' : si >= R.steps.length - 1 ? 'Play again' : 'Play the explanation';
+}
+// the next action after the explanation: the next round, or the results after round 10
+function guideNext() {
+  if (r === ROUNDS.length - 1) guide(5, 'Press <b>See results</b> under the answers in the round card to see your score for all 10 rounds.');
+  else guide(4, 'Press <b>Next round</b> under the answers to go to round ' + (r + 2) + ' of ' + ROUNDS.length + '.');
+}
+function guideStep() {
+  const n = ROUNDS[order[r]].steps.length;
+  if (si >= n - 1) return guideNext();
+  guide(3, 'Read step ' + (si + 1) + ' of ' + n + ' in the box under the board. Then press <b>Step</b> for the next one.');
 }
 async function showStep(i) {
   const R = ROUNDS[order[r]], my = ++token, s = R.steps[i], ok = verdict();
@@ -957,6 +1034,7 @@ async function showStep(i) {
   $('#cap').style.setProperty('--cap', ok ? 'var(--ok)' : 'var(--bad)');
   $('#capT').textContent = 'Step ' + (i + 1) + ' of ' + R.steps.length + (ok ? ' · your design matches' : ' · review the best design');
   $('#capB').textContent = s.t; setStepButtons();
+  if (!playing) guideStep();
   await G.run(s, stepColor());
   if (my !== token) return false;
   G.config(cfgAfter(R, i + 1));
@@ -964,11 +1042,12 @@ async function showStep(i) {
 }
 async function play() {
   const R = ROUNDS[order[r]]; playing = true; const my = token + 1; setStepButtons();
+  guide(3, 'Watch the board above. Read each step in the box under the board as it plays.');
   for (let i = 0; i < R.steps.length; i++) {
     const done = await showStep(i); if (!done || token !== my + i) { playing = false; setStepButtons(); return; }
     if (i < R.steps.length - 1) { await wait(RM ? 1800 : Math.min(3200, 1200 + R.steps[i].t.length * 12)); if (token !== my + i) { playing = false; setStepButtons(); return; } }
   }
-  playing = false; setStepButtons();
+  playing = false; setStepButtons(); guideNext();
 }
 function stopPlay() { token++; playing = false; if (G) G.stop(); }
 
@@ -981,15 +1060,17 @@ function showRound() {
   $('#doorName').textContent = R.site;
   R._opts = shuffle(R.opts);
   $('#opts').innerHTML = R._opts.map((o, i) => '<button type="button" aria-pressed="false" data-i="' + i + '"><span class="key">' + 'ABCD'[i] + '</span>' + esc(o[0]) + '</button>').join('');
-  $('#btnCheck').disabled = false; $('#btnNext').disabled = true; $('#btnNext').textContent = 'Next round';
+  $('#roundBtns').hidden = false; $('#btnCheck').disabled = false; $('#btnNext').disabled = true; $('#btnNext').textContent = 'Next round';
   G.config(cfgBefore(R)); G.mark([R.ask], C.ask);
   $('#cap').style.removeProperty('--cap'); $('#capT').textContent = 'The door you are designing';
-  $('#capB').textContent = 'The part marked ? is your call: ' + COMP[R.ask].nm.toLowerCase() + '. After you check your answer, play the explanation.';
+  $('#capB').textContent = 'The part marked ? (outlined in blue) is the one you choose: the ' + COMP[R.ask].nm.toLowerCase() + '. Pick your answer in the round card below, then press Check.';
   setStepButtons(); drawProgress();
+  guide(1, 'Read round ' + (r + 1) + ' of ' + ROUNDS.length + ' in the round card below. Then click the answer you think is best.');
 }
-$('#opts').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled) return; picked = +b.dataset.i; document.querySelectorAll('#opts button').forEach(x => { x.setAttribute('aria-pressed', x === b); x.classList.toggle('sel', x === b); }); });
+$('#opts').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled) return; picked = +b.dataset.i; document.querySelectorAll('#opts button').forEach(x => { x.setAttribute('aria-pressed', x === b); x.classList.toggle('sel', x === b); }); $('#fb').innerHTML = '';
+  guide(2, 'You picked answer ' + 'ABCD'[picked] + '. Press <b>Check</b> to see your points, or click a different answer first.'); });
 $('#btnCheck').addEventListener('click', () => {
-  if (picked == null) { $('#fb').innerHTML = '<div class="feedback info">Pick an answer first.</div>'; return; }
+  if (picked == null) { $('#fb').innerHTML = '<div class="feedback info">No answer is selected yet. Click one of the answers A to D above, then press Check again.</div>'; guide(2, 'Click one of the answers A to D first. Then press <b>Check</b>.'); return; }
   const R = ROUNDS[order[r]], o = R._opts[picked], max = Math.max(...R.opts.map(x => x[1])), best = R._opts.find(x => x[1] === max);
   total += o[1]; log[r] = {topic: R.topic, a: o[3], best: best[3], pts: o[1], max: max};
   document.querySelectorAll('#opts button').forEach((b, i) => { b.disabled = true; b.classList.remove('sel'); if (R._opts[i] === best) b.classList.add('right'); else if (i === picked) b.classList.add('wrong'); });
@@ -999,23 +1080,26 @@ $('#btnCheck').addEventListener('click', () => {
   G.config(cfgAfter(R, 0)); G.mark([R.ask], o === best ? C.ok : C.bad);
   $('#cap').style.setProperty('--cap', o === best ? 'var(--ok)' : 'var(--bad)');
   $('#capT').textContent = o === best ? 'Your design matches' : 'Review the best design';
-  $('#capB').textContent = 'The board now shows the best design for this door. Press Play to watch it work, or use Step and Back to go at your own pace.';
+  $('#capB').textContent = 'The board now shows the best design for this door. Press Play the explanation to watch it work, or use Step and Step back to go at your own pace.';
   drawProgress(); setStepButtons();
+  guide(3, 'Read the feedback under the answers. Then press <b>Play the explanation</b> to watch the best design work on the board.');
 });
 $('#btnPlay').addEventListener('click', () => { if (!log[r] || playing) return; play(); });
+$('#btnPlay2').addEventListener('click', () => { if (!log[r] || playing) return; $('#boardCard').scrollIntoView({behavior: RM ? 'auto' : 'smooth', block: 'start'}); play(); });
 $('#btnStep').addEventListener('click', () => { if (!log[r]) return; stopPlay(); showStep(Math.min(si + 1, ROUNDS[order[r]].steps.length - 1)); });
 $('#btnBack').addEventListener('click', () => { if (!log[r]) return; stopPlay(); showStep(Math.max(si - 1, 0)); });
 $('#btnNext').addEventListener('click', () => { if (r < ROUNDS.length - 1) { r++; showRound(); } else finishAll(); });
 function finishAll() {
   stopPlay();
-  $('#results').hidden = false; $('#qTitle').textContent = 'Finished'; $('#qTopic').textContent = 'All ten doors'; $('#qText').textContent = 'Your score: ' + total + ' out of 100. The table below shows every round.'; $('#opts').innerHTML = ''; $('#fb').innerHTML = ''; $('#btnCheck').disabled = true; $('#btnNext').disabled = true;
-  $('#btnPlay').disabled = true; $('#btnStep').disabled = true; $('#btnBack').disabled = true;
+  $('#results').hidden = false; $('#qTitle').textContent = 'Finished'; $('#qTopic').textContent = 'All ten doors'; $('#qText').textContent = 'Your score: ' + total + ' out of 100. The table below shows every round.'; $('#opts').innerHTML = ''; $('#fb').innerHTML = ''; $('#roundBtns').hidden = true; $('#btnCheck').disabled = true; $('#btnNext').disabled = true;
+  $('#btnPlay').disabled = true; $('#btnPlay2').disabled = true; $('#btnStep').disabled = true; $('#btnBack').disabled = true;
   $('#resTable').innerHTML = '<tr><th>Round</th><th>Topic</th><th>Your answer</th><th>Points</th></tr>' + log.map((l, i) => '<tr><td>' + (i + 1) + '</td><td>' + esc(l.topic) + '</td><td>' + esc(l.a) + (l.pts === l.max ? '' : '<span class="muted bestcell">Best: ' + esc(l.best) + '</span>') + '</td><td class="pts ' + (l.pts === l.max ? 'ok' : l.pts > 0 ? 'part' : 'bad') + '">' + l.pts + ' / ' + l.max + '</td></tr>').join('') + '<tr class="tot"><td colspan="3"><b>Total</b></td><td><b>' + total + ' / 100</b></td></tr>';
   $('#resNote').textContent = total === 100 ? 'Every door is safe and secure. Use the same thinking when you write the door schedule for the activity sheet.' : total >= 70 ? 'Good work. Review the rounds marked in gold or coral, then try again for 100.' : 'Review the feedback for each round, then try again. Every attempt shuffles the rounds and the answers.';
   drawProgress(); $('#results').scrollIntoView({behavior: RM ? 'auto' : 'smooth', block: 'start'});
+  guide(5, 'Review your answers in the results table below. Press <b>Try again</b> to play the 10 rounds in a new order.');
 }
 function start() { order = shuffle(ROUNDS.map((_, i) => i)); r = 0; total = 0; log = []; $('#score').textContent = 0; $('#results').hidden = true; $('#specRounds').textContent = ROUNDS.length; showRound(); }
-$('#btnAgain').addEventListener('click', () => { start(); document.querySelector('.grid.two').scrollIntoView({behavior: RM ? 'auto' : 'smooth', block: 'start'}); });
+$('#btnAgain').addEventListener('click', () => { start(); $('#boardCard').scrollIntoView({behavior: RM ? 'auto' : 'smooth', block: 'start'}); });
 try { G = board3D($('#stage')); } catch (e) { console.error(e); G = null; }
 if (!G) { $('#stage').querySelectorAll('canvas,.labels,.zoomctl').forEach(n => n.remove()); G = board2D($('#stage')); }
 // hooks for automated tests: the points of the current options and the playback state

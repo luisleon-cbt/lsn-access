@@ -234,18 +234,44 @@
     .controls{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
   @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---- stacked layout (v2, October 29 2026): the board uses the full width of the page, instructions and controls go below it ---- */
+  .app{display:block;height:auto;min-height:0}
+  .app>.lab-head{max-width:1240px;margin:0 auto;padding:18px 16px 14px}
+  .app>.lab-head h1{font-size:clamp(24px,3vw,32px);margin:4px 0 6px}
+  .app>.stage{width:100%;height:clamp(420px,70vh,860px);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .panel{max-width:1240px;margin:0 auto;border-left:0;overflow:visible;background:none;display:block;columns:2 420px;column-gap:28px;padding:20px 16px 28px}
+  .panel>*{break-inside:avoid;margin:0 0 22px}
+  .panel>header,.panel>footer,.panel>.guide,.panel>.span-all{column-span:all}
+  /* how to use: numbered steps with the current one highlighted, plus a "do this now" line */
+  .guide{max-width:1240px;margin:0 auto;padding:18px 16px 4px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px 26px;align-items:start}
+  .guide h2{grid-column:1/-1;margin:0;font-size:18px}
+  .guide ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:s}
+  .guide ol.steps li{counter-increment:s;position:relative;padding:8px 10px 8px 44px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--silk);font-size:15px;line-height:1.45}
+  .guide ol.steps li::before{content:counter(s);position:absolute;left:10px;top:8px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:700 13px var(--font-mono);background:var(--line);color:var(--silk)}
+  .guide ol.steps li.current{border-color:var(--cbt-gold);background:var(--panel-2)}
+  .guide ol.steps li.current::before{background:var(--cbt-gold);color:var(--cbt-navy)}
+  .guide ol.steps li.done{color:var(--silk-dim)}
+  .guide ol.steps li.done::before{content:"\2713";background:var(--ok);color:#06120f}
+  .guide ol.steps li b,.guide .now b{color:var(--cbt-gold);font-weight:600}
+  .guide .now{border-left:4px solid var(--cbt-sky);background:var(--panel-2);border-radius:6px;padding:14px 16px;font-size:16px;line-height:1.5;color:var(--silk)}
+  .guide .now .k{display:block;font:600 10.5px var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--cbt-sky);margin-bottom:4px}
+  .guide .tips{margin:10px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--silk-dim);display:grid;gap:4px}
+  @media(max-width:860px){.guide{grid-template-columns:1fr}.panel{columns:1}}
+  /* page mode: board card on top across the full width, the round or task below */
+  .card .stage.wide{aspect-ratio:21/9;min-height:360px}
+  @media(max-width:860px){.card .stage.wide{aspect-ratio:4/3;min-height:0}}
   /* ===== end of theme ===== */
 
-  /* page-specific CSS: iVMS-4200 lab simulator. A wider control panel holds the simulated software window. */
-  .app.ivms{grid-template-columns:minmax(0,1fr) minmax(470px,570px)}
-  @media(max-width:1100px){.app.ivms{grid-template-columns:minmax(0,1fr) 450px}}
-  @media(max-width:860px){.app.ivms{grid-template-columns:1fr}.app.ivms .stage{height:64vh;min-height:420px}}
+  /* page-specific CSS: iVMS-4200 lab simulator. The simulated software window and the work order run across the full width below the board. */
+  /* phones: the "Do this now" line comes right under the board, before the numbered steps */
+  @media(max-width:860px){.guide h2{order:-2}.guide>div{order:-1}}
   .hud .doorstat{background:rgba(11,15,43,.78);border:1px solid var(--line);border-radius:6px;backdrop-filter:blur(6px);font:500 11px var(--font-mono);color:var(--silk);padding:8px 10px;letter-spacing:.03em}
   .hud .doorstat b{color:var(--cbt-gold);font-weight:600}
   .hud .doorstat.alarm{border-color:var(--bad);color:#ffd9d3}
   .small{font-size:12.5px}
-  .panel{gap:18px}
   .narr .controls{margin-top:2px}
+  .narr p{min-height:3.2em}
   .bench{border:1px solid var(--line);border-radius:6px;padding:12px;background:var(--panel-2)}
   .bench h2{margin-bottom:8px}
   .brow{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1.1fr) minmax(0,.9fr);gap:8px;align-items:end}
@@ -275,7 +301,8 @@
   .win-tabs button[aria-selected="true"]{background:#fff;box-shadow:inset 0 -3px 0 #E0B840}
   .win-tabs .n{position:absolute;top:3px;left:5px;font:600 9.5px var(--font-mono);color:#7a809c}
   .win-tabs .ck{position:absolute;top:3px;right:5px;width:13px;height:13px;border-radius:50%;background:#2f9e63;color:#fff;font:700 9px/13px var(--font-body);text-align:center}
-  .win-body{padding:12px;min-height:280px;background:#fff}
+  .win-body{padding:14px 16px;min-height:320px;background:#fff}
+  @media(min-width:861px){.win-tabs{grid-template-columns:repeat(8,minmax(0,1fr))}.win-tabs button{padding:8px 4px 7px;font-size:12.5px}.win .dlg{max-width:760px}.win .fgrid{max-width:720px}}
   .win-note{margin:0;padding:8px 12px;background:#FBF4DD;border-top:1px solid #E8D9A5;color:#4a4020;font-size:12px}
   .win :focus-visible{outline:2px solid #283068;outline-offset:1px}
   .win h3{color:#283068;font-size:13px;margin:12px 0 6px}
@@ -380,6 +407,7 @@
   .tasks li .tip{grid-column:2/-1;font-size:12px;color:var(--warn)}
   .tasks li .pt{font:600 12px var(--font-mono);color:var(--silk-dim);white-space:nowrap}
   .tasks li.done .pt{color:var(--ok)}
+  .wo-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:0 22px}
   .wo-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
 </style>
 </head>
@@ -392,6 +420,11 @@
 </header>
 
 <div class="app ivms">
+  <header class="lab-head">
+    <p class="eyebrow">LSN-ACCESS · Lesson 1 · Lab simulator</p>
+    <h1>iVMS-4200 door programming</h1>
+    <p class="lede">Add the controller, set the door, enter the people and cards, build the schedule, download the permissions, and test the staff entrance. Practice here before you program the real controller.</p>
+  </header>
   <section class="stage" id="stage" aria-label="3D view of the staff entrance lab bench: lab PC, controller, reader, relay, electric strike, and door. Drag to orbit, use the zoom buttons or scroll to zoom, click a part to learn what it does.">
     <div class="hud hud-top">
       <ol class="phases" aria-label="Phase">
@@ -419,26 +452,43 @@
         <button type="button" id="follow" class="on" aria-pressed="true">Follow</button>
       </div>
     </div>
-    <div class="nogl" id="nogl" hidden>The 3D view needs WebGL and the 3D libraries, which are not available here. The flat board shows the same lab.</div>
+    <div class="nogl" id="nogl" hidden>The 3D view needs WebGL and the 3D libraries, which are not available here. This flat board shows the same lab.</div>
+  </section>
+
+  <section class="guide" aria-labelledby="guideTitle">
+    <h2 id="guideTitle">How to use this lab</h2>
+    <ol class="steps" id="howSteps">
+      <li data-h="1">In the iVMS-4200 window below, open tab 1, <b>Controller</b>. Press <b>+ Add Device</b>, type the values from the yellow work order note, and press <b>Add</b>. Success: the status says <b>Online</b>.</li>
+      <li data-h="2">Open tab 2, <b>Door</b>. Check the five values against the note and press <b>Edit</b> to save them. Then press <b>Hardware Parameters Downloading</b> to send them to the controller.</li>
+      <li data-h="3">Open tab 3, <b>Person</b>, and add the departments Clinical and Front desk, then the three employees. Open tab 4, <b>Card</b>, add cards 10045 to 10047, and press <b>Issue Card</b> for each one.</li>
+      <li data-h="4">Open tab 5, <b>Schedule</b>. Build the week plan Office hours by clicking hour blocks or typing From and To times. Then make the template Office hours with it.</li>
+      <li data-h="5">Open tab 6, <b>Permission</b>. Press <b>+ Add Permission</b> and give both departments the staff entrance door with Office hours. Test one card on the test bench, then press <b>Start Downloading</b>.</li>
+      <li data-h="6">On the <b>Test bench</b> below, pick a card and a time and press <b>Present card</b>. Watch the board above. Then press <b>Open door</b> in tab 7, <b>Status</b>, read tab 8, <b>Events</b>, and do the fault drill.</li>
+    </ol>
+    <div>
+      <div class="now" aria-live="polite"><span class="k">Do this now</span><span id="nowText">Open tab 1, <b>Controller</b>, in the iVMS-4200 window below, and add the controller.</span></div>
+      <ul class="tips">
+        <li>The <b>Work order</b> at the bottom lists every task, its points, and a tip for anything still missing.</li>
+        <li>Your progress stays in this browser. <b>Start the lab over</b> in the work order erases it.</li>
+        <li>Drag on the board to turn it. Use <b>+</b>, <b>&minus;</b>, the arrows, and <b>FIT</b> to zoom and move. <b>Door</b> jumps to the door.</li>
+        <li>Keyboard: Space steps a test, B steps back, R replays the last test.</li>
+      </ul>
+    </div>
   </section>
 
   <aside class="panel">
-    <header>
-      <p class="eyebrow">LSN-ACCESS · Lesson 1 · Lab simulator</p>
-      <h1>iVMS-4200 door programming</h1>
-      <p class="lede">Add the controller, set the door, enter the people and cards, build the schedule, download the permissions, and test the staff entrance. Practice here before you program the real controller.</p>
-    </header>
-
-    <section class="narr" aria-live="polite">
-      <div class="narr-head"><span class="ptag" id="phaseTag">Ready</span><span id="ctx">Score 0 of 100</span></div>
-      <p id="narration">Palmetto Dental Group wants its staff entrance programmed. Work through the iVMS-4200 tabs in order, 1 to 8, using the work order below the window. Then test cards on the test bench and watch the board.</p>
-      <div class="controls">
-        <button type="button" class="btn primary" id="btnRun">Replay test</button>
-        <button type="button" class="btn" id="btnStep">Step</button>
-        <button type="button" class="btn" id="btnBack">Step back</button>
+    <section aria-labelledby="hNarr">
+      <h2 id="hNarr">What is happening</h2>
+      <div class="narr" aria-live="polite">
+        <div class="narr-head"><span class="ptag" id="phaseTag">Ready</span><span id="ctx">Score 0 of 100</span></div>
+        <p id="narration">Work order PD-2611: Palmetto Dental Group wants its staff entrance programmed. Follow the steps above, starting with tab 1, Controller, in the iVMS-4200 window below. Every value you need is in the yellow note at the top of each tab.</p>
+        <div class="controls">
+          <button type="button" class="btn primary" id="btnRun">Replay test</button>
+          <button type="button" class="btn" id="btnStep">Step</button>
+          <button type="button" class="btn" id="btnBack">Step back</button>
+        </div>
+        <div class="speed"><label for="speed">Speed</label><input type="range" id="speed" min="0" max="4" step="1" value="2"><output id="speedOut">1×</output></div>
       </div>
-      <div class="speed"><label for="speed">Speed</label><input type="range" id="speed" min="0" max="4" step="1" value="2"><output id="speedOut">1×</output></div>
-      <p class="hint">Keyboard: Space steps, B steps back, R replays, + and - zoom.</p>
     </section>
 
     <section class="bench" aria-labelledby="benchH">
@@ -472,17 +522,17 @@
         <button type="button" class="btn on" id="btnSound" aria-pressed="true">Sound on</button>
       </div>
       <div class="lastres" id="lastRes">No test yet.</div>
-      <p class="hint" style="margin-top:6px">Door timers run twice as fast as real time, so a 10 s timeout takes 5 s here.</p>
+      <p class="hint" style="margin-top:6px">A quick time button fills in the date and the time. Door timers run twice as fast as real time, so a 10 s timeout takes 5 s here.</p>
     </section>
 
-    <section class="win" aria-label="Simulated iVMS-4200 window">
+    <section class="win span-all" aria-label="Simulated iVMS-4200 window">
       <div class="win-title"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>iVMS-4200 · Access control</span><span class="conn" id="winConn">PC 192.168.10.10</span></div>
       <div class="win-tabs" role="tablist" aria-label="iVMS-4200 modules" id="winTabs"></div>
       <div class="win-body" id="winBody" role="tabpanel"></div>
       <p class="win-note">Newer iVMS-4200 3.x releases arrange these screens differently (a permission is called an access group there), but the order of work is the same: device, door, people and cards, schedule, permission, download, then test.</p>
     </section>
 
-    <section class="wo" aria-labelledby="woH">
+    <section class="wo span-all" aria-labelledby="woH">
       <div class="wo-head">
         <div>
           <p class="eyebrow">Work order PD-2611</p>
@@ -492,13 +542,19 @@
         <div class="score"><span class="big" id="scoreBig">0</span><span>of 100</span></div>
       </div>
       <p class="small" style="margin:10px 0 0">Controller DS-K2601 at <code>192.168.10.64</code>, port <code>8000</code>, user <code>admin</code>, password <code>Hialeah2026</code>. Lab PC <code>192.168.10.10</code>. Cards carry facility code 18; type only the card number.</p>
-      <h3>Set up (80 points)</h3>
-      <ol class="tasks" id="tasksA"></ol>
-      <h3>Test and record (20 points)</h3>
-      <ol class="tasks" id="tasksB"></ol>
-      <div class="wo-foot">
-        <span class="small muted">Your progress stays in this browser.</span>
-        <button type="button" class="btn" id="btnResetLab">Start the lab over</button>
+      <div class="wo-cols">
+        <div>
+          <h3>Set up (80 points)</h3>
+          <ol class="tasks" id="tasksA"></ol>
+        </div>
+        <div>
+          <h3>Test and record (20 points)</h3>
+          <ol class="tasks" id="tasksB"></ol>
+          <div class="wo-foot">
+            <span class="small muted">Your progress stays in this browser.</span>
+            <button type="button" class="btn" id="btnResetLab">Start the lab over</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -521,6 +577,11 @@
 (function () {
 "use strict";
 const hasGSAP = typeof window.gsap !== 'undefined';
+// guide block: mark the current step (1-based) and say the single next action
+function guide(stepNo, nowHtml) {
+  document.querySelectorAll('#howSteps li').forEach(li => { const n = +li.dataset.h; li.classList.toggle('done', n < stepNo); li.classList.toggle('current', n === stepNo); });
+  if (nowHtml) document.getElementById('nowText').innerHTML = nowHtml;
+}
 const $ = s => document.querySelector(s);
 // LAB3D START: CBT 3D kit (modeled on the professor's "Tiny Machine Lab" reference, in CBT colors: navy board, gold traces). Paste as one block.
 // Needs Three.js r147 (three.min.js), examples/js/controls/OrbitControls.js, examples/js/renderers/CSS2DRenderer.js and GSAP 3.12.5.
@@ -748,11 +809,15 @@ function Lab3D(stage, opts) {
     if (name === 'overview' || !views[name]) {
       // the overview (and FIT) must show the whole board width, also on narrow phone screens,
       // leaving room for the zoom buttons at the right edge
-      const tanH = Math.tan(T.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
+      // and, on wide stages, fill the stage: the board fits both the width and the height of the view, no more, no less
+      const tanV = Math.tan(T.MathUtils.degToRad(camera.fov / 2)), tanH = tanV * camera.aspect;
+      const dist0 = pos.distanceTo(tgt), sinE = Math.max(0.3, (pos.y - tgt.y) / dist0);
       const need = (B.w / 2 + 0.5) / (tanH * 0.92) + B.d * 0.25;
-      f = Math.max(f, need / pos.distanceTo(tgt));
-      controls.maxDistance = Math.max(controls.maxDistance, need * 1.3);
-      if (scene.fog) { scene.fog.near = Math.max(scene.fog.near, need * 1.1); scene.fog.far = Math.max(scene.fog.far, need * 2.6); }
+      const needD = (B.d / 2 * sinE + 0.8) / (tanV * 0.78) + B.d * 0.25;   // 0.78 leaves room for the HUD bars at the top and bottom
+      f = Math.max(need, needD) / dist0;
+      const need2 = Math.max(need, needD);
+      controls.maxDistance = Math.max(controls.maxDistance, need2 * 1.3);
+      if (scene.fog) { scene.fog.near = Math.max(scene.fog.near, need2 * 1.1); scene.fog.far = Math.max(scene.fog.far, need2 * 2.6); }
     }
     pos.sub(tgt).multiplyScalar(f).add(tgt);
     return {pos: pos, tgt: tgt};
@@ -1138,7 +1203,7 @@ const INFO = {
 
 function Graphics3D(stage) {
   const lab = Lab3D(stage, {board: {w: 17, d: 10.4, cx: 0, cz: 0, silk: 'CBT TECHNOLOGY INSTITUTE  LSN-ACCESS  STAFF ENTRANCE TRAINER', seed: 21},
-    views: {overview: {pos: [0, 12.5, 11], tgt: [0, 0.4, 0], want: 1.5}, door: {pos: [10.5, 5.5, 3.2], tgt: [5.4, 1.5, -2.6], want: 1.1}}});
+    views: {overview: {pos: [0, 12.5, 11], tgt: [0, 0.4, 0], want: 1.5}, door: {pos: [12.9, 6.4, 6.2], tgt: [6.0, 1.0, -1.6], want: 1.1}}});
   if (!lab) return null;
   const T = lab.T, scene = lab.scene;
   const M = {net: lab.busMat(SKY), wieg: lab.busMat(GOLD), relay: lab.busMat(GREEN), strike: lab.busMat(GREEN), psu: lab.busMat(CORAL), contact: lab.busMat(ICE), exit: lab.busMat(PERI)};
@@ -1419,6 +1484,7 @@ function render() {
   $('#btnStep').disabled = !SEQ || S.step >= n;
   $('#btnRun').disabled = !SEQ;
   $('#btnRun').textContent = running ? 'Pause' : (!SEQ || S.step >= n || S.step === 0 ? 'Replay test' : 'Play');
+  updateGuide();
 }
 function commitStep(i) { if (!SEQ || SEQ.did[i]) return; SEQ.did[i] = true; const m = SEQ.steps[i]; if (m.commit) m.commit(SEQ); }
 function finish(i) {
@@ -1548,14 +1614,14 @@ const TABS = [
   {id: 'status', label: 'Status', ids: ['t_ac']}, {id: 'ev', label: 'Events', ids: []}
 ];
 const TAB_TEXT = {
-  dev: 'Step 1, controller management. iVMS-4200 has to reach the controller on the network before it can send it anything. Type the address from the work order, port 8000 (the port the controller listens on), Dial-up 1, and the admin login. A wrong address leaves the controller Offline.',
-  door: 'Step 2, the door settings. They tell the controller how the door hardware is wired. The door contact is closed when the door is closed, so Door Magnetic is Remain Closed; the exit button is normally open, so Exit Button Type is Remain Open. Press Edit to save, then Hardware Parameters Downloading to copy the settings into the controller.',
-  person: 'Step 3, people. Departments group people, so one permission can cover a whole team. Add Clinical and Front desk under Default, then select a department and add each employee to it.',
-  card: 'Step 4, cards. A new card number goes into the Blank card list first. Issue Card links it to a person and moves it to the Normal card list. Report Card Loss moves it to the Lost card list, where it no longer opens doors.',
-  sched: 'Step 5, the schedule. A week plan holds the hours for each day. A holiday group holds special dates and wins over the week plan. A template puts a week plan and holiday groups together, and permissions use templates.',
-  perm: 'Step 6, permissions. A permission says who may open which door, during which template. Then Start Downloading copies everything into the controller. Until you download, the controller does not know about it.',
-  status: 'Step 7, status monitor. The door icon shows what the controller reports, which is not always the truth about the door. Anti-control buttons send a command: open once, close once, or keep the door open or closed until the next command.',
-  ev: 'Step 8, events. Every card, button, and door change becomes a row here, with the time, card number, and card holder. Use this list to prove each test on your lab sheet.'
+  dev: 'Tab 1, controller management. iVMS-4200 has to reach the controller on the network before it can send it anything. Type the address from the work order, port 8000 (the port the controller listens on), Dial-up 1, and the admin login. A wrong address leaves the controller Offline.',
+  door: 'Tab 2, the door settings. They tell the controller how the door hardware is wired. The door contact is closed when the door is closed, so Door Magnetic is Remain Closed; the exit button is normally open, so Exit Button Type is Remain Open. Press Edit to save, then Hardware Parameters Downloading to copy the settings into the controller.',
+  person: 'Tab 3, people. Departments group people, so one permission can cover a whole team. Add Clinical and Front desk under Default, then select a department and add each employee to it.',
+  card: 'Tab 4, cards. A new card number goes into the Blank card list first. Issue Card links it to a person and moves it to the Normal card list. Report Card Loss moves it to the Lost card list, where it no longer opens doors.',
+  sched: 'Tab 5, the schedule. A week plan holds the hours for each day. A holiday group holds special dates and wins over the week plan. A template puts a week plan and holiday groups together, and permissions use templates.',
+  perm: 'Tab 6, permissions. A permission says who may open which door, during which template. Then Start Downloading copies everything into the controller. Until you download, the controller does not know about it.',
+  status: 'Tab 7, status monitor. The door icon shows what the controller reports, which is not always the truth about the door. Anti-control buttons send a command: open once, close once, or keep the door open or closed until the next command.',
+  ev: 'Tab 8, events. Every card, button, and door change becomes a row here, with the time, card number, and card holder. Use this list to prove each test on your lab sheet.'
 };
 function scoreNow() { return AC.score(ST); }
 function renderTabs() {
@@ -1572,6 +1638,7 @@ function renderPane() {
   if (UI.tab === 'sched' && UI.schTab === 'week') paintGrid();
   const c = $('#winConn'), dev = online();
   c.innerHTML = 'PC 192.168.10.10 · ' + (dev ? '<b>' + esc(dev.name) + ' online</b>' : '<b class="off">no device online</b>');
+  updateGuide();
 }
 function after() { renderTabs(); renderPane(); renderScore(); sync(); save(); }
 function refreshLive() {
@@ -1726,7 +1793,7 @@ ACT.deptCancel = () => { UI.deptForm = false; renderPane(); };
 ACT.deptSave = () => {
   const name = val('ddName').trim(), parent = val('ddUp') || 'root';
   if (!name) { $('#deptErr').textContent = 'Enter the department name.'; return; }
-  if (ST.cfg.depts.some(d => d.parent === parent && AC.simple(d.name) === AC.simple(name))) { $('#deptErr').textContent = 'That department already exists here.'; return; }
+  if (ST.cfg.depts.some(d => d.parent === parent && AC.simple(d.name) === AC.simple(name))) { $('#deptErr').textContent = 'That department already exists here. Type a different name.'; return; }
   const d = {id: nid('dp'), name: name, parent: parent}; ST.cfg.depts.push(d); UI.deptSel = d.id; UI.deptForm = false;
   say('Department ' + name + ' added under ' + deptOf(parent).name + '. It is selected now, so Add Person puts new people in it.', 'Person', 'var(--cbt-sky)');
   after();
@@ -1745,7 +1812,7 @@ ACT.personCancel = () => { UI.personForm = false; renderPane(); };
 ACT.personSave = () => {
   const name = val('ppName').trim().replace(/\s+/g, ' '), dept = val('ppDept');
   if (!name) { $('#personErr').textContent = 'Person Name is required.'; return; }
-  if (ST.cfg.persons.some(p => AC.simple(p.name) === AC.simple(name))) { $('#personErr').textContent = 'A person with this name already exists.'; return; }
+  if (ST.cfg.persons.some(p => AC.simple(p.name) === AC.simple(name))) { $('#personErr').textContent = 'A person with this name already exists. Check the list under Default.'; return; }
   ST.cfg.persons.push({id: nid('p'), name: name, gender: val('ppGender'), idno: val('ppId').trim(), dept: dept});
   UI.personForm = false;
   say(name + ' added to ' + deptOf(dept).name + '. ' + (dept === 'root' ? 'Default is the top level, not a department from the work order; select Clinical or Front desk first. ' : '') + 'When everyone is in, give each person a card in tab 4.', 'Person', 'var(--cbt-sky)');
@@ -1905,7 +1972,7 @@ ACT.wpAdd = () => { UI.wpForm = true; renderPane(); const f = $('#wpName'); if (
 ACT.wpCancel = () => { UI.wpForm = false; renderPane(); };
 ACT.wpSave = () => {
   const n = val('wpName').trim(); if (!n) { $('#wpErr').textContent = 'Enter the week plan name.'; return; }
-  if (ST.cfg.weekPlans.some(w => AC.simple(w.name) === AC.simple(n))) { $('#wpErr').textContent = 'That name is taken.'; return; }
+  if (ST.cfg.weekPlans.some(w => AC.simple(w.name) === AC.simple(n))) { $('#wpErr').textContent = 'That name is taken. Type a different name.'; return; }
   const w = {id: nid('w'), name: n, days: [[], [], [], [], [], [], []]}; ST.cfg.weekPlans.push(w); UI.wpSel = w.id; UI.wpForm = false; UI.wpDay = 0;
   say('Week plan ' + n + ' added, empty. Fill Monday first (07:00 to 19:00), then use Copy to Week and fix Saturday and Sunday.', 'Schedule', 'var(--cbt-sky)'); after();
 };
@@ -1954,7 +2021,7 @@ ACT.tpAdd = () => { UI.tpForm = true; renderPane(); const f = $('#tpName'); if (
 ACT.tpCancel = () => { UI.tpForm = false; renderPane(); };
 ACT.tpSave = () => {
   const n = val('tpName').trim(); if (!n) { $('#tpErr').textContent = 'Enter the template name.'; return; }
-  if (ST.cfg.templates.some(t => AC.simple(t.name) === AC.simple(n))) { $('#tpErr').textContent = 'That name is taken.'; return; }
+  if (ST.cfg.templates.some(t => AC.simple(t.name) === AC.simple(n))) { $('#tpErr').textContent = 'That name is taken. Type a different name.'; return; }
   const t = {id: nid('t'), name: n, week: 'wp-en', hols: []}; ST.cfg.templates.push(t); UI.tpSel = t.id; UI.tpForm = false;
   say('Template ' + n + ' added. It starts with Enable Week Plan by Default (all day, every day): choose your own week plan and press Save.', 'Schedule', 'var(--cbt-sky)'); after();
 };
@@ -2034,7 +2101,7 @@ ACT.dlCancel = () => { UI.dl = false; renderPane(); };
 ACT.dlClose = () => { UI.dlResult = null; renderPane(); };
 ACT.dlOk = () => {
   const c = ST.cfg, chosen = c.devices.filter(d => { const e = document.getElementById('dlD-' + d.id); return e && e.checked; });
-  if (!chosen.length) { $('#dlErr').textContent = 'Choose a controller.'; return; }
+  if (!chosen.length) { $('#dlErr').textContent = 'Tick the controller, then press OK.'; return; }
   const res = chosen.map(d => { const k = AC.connect(d); if (k.online) { ST.ctrl.perm = AC.compile(c, d.id); return {name: d.name, ok: true, remark: Object.keys(ST.ctrl.perm.cards).length + ' cards'}; } return {name: d.name, ok: false, remark: 'Device offline'}; });
   UI.dl = false; UI.dlResult = res;
   const good = res.find(r => r.ok);
@@ -2130,6 +2197,125 @@ function renderScore() {
   $('#scoreBig').textContent = sc.total;
   $('#ctx').textContent = 'Score ' + sc.total + ' of 100';
   renderTabs();
+  updateGuide();
+}
+
+// ---- the "Do this now" line: the single next action, from the work order score and what is open in the window ----
+const hm = m => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
+function faultMsg(dev) {
+  if (ST.flags.magFault) {
+    if (UI.tab !== 'door') return 'Fault drill, last part: open tab 2, <b>Door</b>, to put Door Magnetic back.';
+    if (dev.door.mag !== 'closed') return 'Set Door Magnetic back to <b>Remain Closed</b> and press <b>Edit</b>.';
+    return 'Press <b>Hardware Parameters Downloading</b> to send the fix to the controller.';
+  }
+  if (ST.ctrl.door.mag === 'open' && ST.ctrl.doorDl) return 'Wait about 5 s and watch the board above. The closed door reads open, and a Door open timeout event appears in tab 8, <b>Events</b>.';
+  if (UI.tab !== 'door') return 'Fault drill: open tab 2, <b>Door</b>, in the iVMS-4200 window below.';
+  if (dev.door.mag !== 'open') return 'Fault drill: set Door Magnetic to <b>Remain Open</b> and press <b>Edit</b>.';
+  return 'Press <b>Hardware Parameters Downloading</b> to send the wrong setting to the controller.';
+}
+function nextAction() {
+  const sc = AC.score(ST), it = {}, c = ST.cfg, dev = online();
+  sc.items.forEach(i => { it[i.id] = i; });
+  const full = id => it[id].pts >= it[id].max;
+  const tab = (id, n, label, what) => UI.tab !== id ? 'Open tab ' + n + ', <b>' + label + '</b>, in the iVMS-4200 window below' + (what ? ', and ' + what : '') + '.' : null;
+  let t;
+  // tab 1, controller
+  if (!full('ctrl')) {
+    if ((t = tab('dev', 1, 'Controller', c.devices.length ? 'fix the controller' : 'add the controller'))) return [1, t];
+    if (!c.devices.length) return [1, UI.devForm ? 'Type the values from the yellow note: Name <b>Staff entrance</b>, Address <b>192.168.10.64</b>, Port <b>8000</b>, Dial-up <b>1</b>, User Name <b>admin</b>, Password <b>Hialeah2026</b>. Then press <b>Add</b>.' : 'In tab 1, <b>Controller</b>, press <b>+ Add Device</b>.'];
+    if (!dev) return [1, UI.devForm ? 'Fix the value that the red line named, then press <b>Edit</b> in the form.' : 'The controller is Offline. Read the red line under it, click its row, and press <b>Edit</b>.'];
+    return [1, UI.devForm ? 'Set Type to <b>Access Controller_DS-K2601</b> and press <b>Edit</b>.' : 'Click the controller row, press <b>Edit</b>, and set Type to <b>Access Controller_DS-K2601</b>.'];
+  }
+  // fault drill: the last task, after the tests
+  if (['perm', 'dl', 't_ok', 't_sched', 't_ac'].every(full) && !full('t_fault')) return [6, faultMsg(dev)];
+  // tab 2, door
+  if (!full('door')) {
+    if ((t = tab('door', 2, 'Door', 'set Door_1'))) return [2, t];
+    return [2, AC.doorOK(dev.door) ? 'The values match the work order. Press <b>Hardware Parameters Downloading</b> to send them to the controller.'
+      : 'Set the values from the yellow note: Door Magnetic <b>Remain Closed</b>, Exit Button Type <b>Remain Open</b>, then 5, 15, and 10 seconds. Press <b>Edit</b> to save.'];
+  }
+  // tab 3, departments and people
+  if (!full('depts')) {
+    if ((t = tab('person', 3, 'Person', 'add the two departments'))) return [3, t];
+    const have = c.depts.map(x => AC.simple(x.name)), need = ['Clinical', 'Front desk'].find(n => !have.includes(AC.simple(n)));
+    return [3, UI.deptForm ? 'Type Department Name <b>' + need + '</b>, keep Upper Department <b>Default</b>, and press <b>OK</b>.' : 'Press <b>+ Add Department</b> to add <b>' + need + '</b> under Default.'];
+  }
+  if (!full('persons')) {
+    if ((t = tab('person', 3, 'Person', 'add the three employees'))) return [3, t];
+    const deptName = id => { const d = c.depts.find(x => x.id === id); return d ? AC.simple(d.name) : ''; };
+    const s = AC.SCEN.find(s => { const p = c.persons.find(x => AC.simple(x.name) === AC.simple(s.name)); return !(p && deptName(p.dept) === AC.simple(s.dept)); });
+    if (c.persons.some(x => AC.simple(x.name) === AC.simple(s.name))) return [3, s.name + ' is in the wrong department. Click <b>Default</b> to see everyone, click ' + s.name + "'s row, and press <b>Delete</b>. Then add " + s.name + ' again in <b>' + s.dept + '</b>.'];
+    if (UI.personForm) return [3, 'Type Person Name <b>' + s.name + '</b>, choose Department <b>' + s.dept + '</b>, and press <b>Save</b>.'];
+    return [3, deptName(UI.deptSel) === AC.simple(s.dept) ? 'Press <b>+ Add Person</b> to add <b>' + s.name + '</b> to ' + s.dept + '.' : 'Click <b>' + s.dept + '</b> in the Departments list, then press <b>+ Add Person</b> for ' + s.name + '.'];
+  }
+  // tab 4, cards
+  if (!full('cards')) {
+    if ((t = tab('card', 4, 'Card', 'add the three cards'))) return [3, t];
+    const s = AC.SCEN.find(s => { const k = c.cards.find(x => x.no === s.card), p = k && c.persons.find(x => x.id === k.person); return !(k && k.status === 'normal' && p && AC.simple(p.name) === AC.simple(s.name)); });
+    const k = c.cards.find(x => x.no === s.card);
+    if (!k || k.status === 'blank') {
+      if (UI.cardTab !== 'blank') return [3, 'Click the <b>Blank card</b> list.'];
+      if (!k) return [3, !UI.cardForm ? 'Press <b>+ Add Card</b> to add card ' + s.card + '.' : UI.cardMethod === 'one' ? 'Type Card No. <b>' + s.card + '</b> and press <b>OK</b>. Or choose <b>Bulk Adding</b> to add 10045 to 10047 at once.' : 'Type Start Card No. <b>10045</b> and End Card No. <b>10047</b>, then press <b>OK</b>.'];
+      if (UI.cardSel !== k.no) return [3, 'Click card <b>' + k.no + '</b> in the Blank card list to select it.'];
+      return [3, UI.issue ? 'Choose <b>' + s.name + '</b> in Person for this card and press <b>OK</b>.' : 'Press <b>Issue Card</b> to give card ' + k.no + ' to ' + s.name + '.'];
+    }
+    if (k.status === 'lost') return [3, UI.cardTab !== 'lost' ? 'Card ' + k.no + ' is reported lost. Click the <b>Lost card</b> list.' : UI.cardSel !== k.no ? 'Click card <b>' + k.no + '</b> to select it.' : 'Press <b>Cancel Card Loss</b>.'];
+    return [3, UI.cardTab !== 'normal' ? 'Card ' + k.no + ' went to the wrong person. Click the <b>Normal card</b> list.' : UI.cardSel !== k.no ? 'Click card <b>' + k.no + '</b> to select it.' : 'Press <b>Return Card</b>. Then issue card ' + k.no + ' again to <b>' + s.name + '</b>.'];
+  }
+  // tab 5, week plan and template
+  if (!full('week')) {
+    if ((t = tab('sched', 5, 'Schedule', 'build the week plan'))) return [4, t];
+    if (UI.schTab !== 'week') return [4, 'Click the <b>Week Plan</b> sub-tab.'];
+    const custom = c.weekPlans.filter(w => !w.fixed);
+    if (!custom.length) return [4, UI.wpForm ? 'Type Week Plan Name <b>Office hours</b> and press <b>OK</b>.' : 'Press <b>+ Add Week Plan</b>.'];
+    const w = wpCur();
+    if (w.fixed) return [4, 'Click your week plan <b>' + esc(custom[custom.length - 1].name) + '</b> in the list.'];
+    if (AC.sameWeek(w.days, AC.OFFICE)) return [4, esc(it.week.tip)];
+    const nd = w.days.map(AC.norm), okDay = i => JSON.stringify(nd[i]) === JSON.stringify(AC.OFFICE[i]);
+    if (okDay(0) && nd.slice(1).every(x => !x.length)) return [4, 'Monday is right. Press <b>Copy to Week</b> to copy it to every day. Then fix Saturday and Sunday.'];
+    const bad = [0, 1, 2, 3, 4, 5, 6].find(i => !okDay(i)), want = AC.OFFICE[bad], dn = AC.DAYS[bad];
+    if (UI.wpDay !== bad) return [4, dn + ' is not right yet. Click <b>' + dn.slice(0, 3) + '</b> at the left of the grid to select it.'];
+    if (!want.length || nd[bad].length) return [4, 'Press <b>Clear Duration</b> to empty ' + dn + (want.length ? '. Then add its hours.' : '. The office is closed that day.')];
+    return [4, 'Set From <b>' + hm(want[0][0]) + '</b> and To <b>' + hm(want[0][1]) + '</b> under the grid, then press <b>Add duration</b>.'];
+  }
+  if (!full('tpl')) {
+    if ((t = tab('sched', 5, 'Schedule', 'make the template'))) return [4, t];
+    if (UI.schTab !== 'tpl') return [4, 'Click the <b>Template</b> sub-tab.'];
+    const custom = c.templates.filter(x => !x.fixed);
+    if (!custom.length) return [4, UI.tpForm ? 'Type Template Name <b>Office hours</b> and press <b>OK</b>.' : 'Press <b>+ Add Template</b>.'];
+    const tp = c.templates.find(x => x.id === UI.tpSel), good = c.weekPlans.find(w => !w.fixed && AC.sameWeek(w.days, AC.OFFICE));
+    if (!tp || tp.fixed) return [4, 'Click your template <b>' + esc(custom[custom.length - 1].name) + '</b> in the list.'];
+    if (good && tp.week !== good.id) return [4, 'Choose Week Plan <b>' + esc(good.name) + '</b> and press <b>Save</b>.'];
+    return [4, esc(it.tpl.tip)];
+  }
+  // tab 6, permission, one test before the download, then the download
+  if (!full('perm')) {
+    if ((t = tab('perm', 6, 'Permission', 'give the permission'))) return [5, t];
+    if (!UI.permWiz) return [5, 'Press <b>+ Add Permission</b>.'];
+    if (UI.permWiz.step === 1) return [5, 'Keep <b>By Department</b> and press <b>Next</b>.'];
+    return [5, 'Choose Template <b>Office hours</b>. Tick ' + (UI.permWiz.by === 'person' ? 'the three employees' : '<b>Clinical</b> and <b>Front desk</b>') + ' and <b>' + esc(doorName(dev)) + '</b>, then press <b>Done</b>.'];
+  }
+  const synced = !!ST.ctrl.perm && JSON.stringify(ST.ctrl.perm) === JSON.stringify(AC.compile(c, dev.id));
+  if (!full('t_nodl') && !synced) return [5, 'Before you download, test once. On the <b>Test bench</b> below, choose <b>10045 Ana Pérez</b>, press <b>Mon 09:00</b>, then press <b>Present card</b>.'];
+  if (!full('dl')) {
+    if ((t = tab('perm', 6, 'Permission', 'download the permission'))) return [5, t];
+    if (UI.dl) return [5, 'Tick <b>' + esc(dev.name) + '</b> and press <b>OK</b>.'];
+    return [5, 'Press <b>Start Downloading</b>' + (it.dl.pts ? ' again: you changed something after the last download.' : ' to copy the permission into the controller.')];
+  }
+  // tests
+  if (!full('t_ok')) return [6, 'On the <b>Test bench</b> below, choose a card, press <b>Mon 09:00</b>, then press <b>Present card</b>. Expect Granted.'];
+  if (!full('t_sched')) return [6, 'On the <b>Test bench</b> below, press <b>Sat 14:00</b>, then press <b>Present card</b>. Expect Denied, outside the schedule.'];
+  if (!full('t_ac')) return [6, tab('status', 7, 'Status', 'open the door from there') || 'Press <b>Open door</b> and watch the strike on the board above.'];
+  if (!full('t_nodl')) return [6, esc(it.t_nodl.tip)];
+  if (!full('t_fault')) return [6, faultMsg(dev)];
+  return [7, 'Lab complete: 100 of 100. Open tab 8, <b>Events</b>, and copy each test into the test table on your lab sheet. Then program the real controller.'];
+}
+function updateGuide() {
+  if (!$('#howSteps')) return;
+  const n = steps().length;
+  if (SEQ && running) { guide(6, 'A test is playing. Watch the board above and read <b>What is happening</b> below. Press <b>Pause</b> to stop it.'); return; }
+  if (SEQ && S.step > 0 && S.step < n) { guide(6, 'The test is paused. Press <b>Step</b> to see the next part, or <b>Play</b> to finish it.'); return; }
+  const a = nextAction(); guide(a[0], a[1]);
 }
 
 // ---- wiring ----
@@ -2165,7 +2351,7 @@ $('#tDate').addEventListener('input', showDay); $('#tDate').addEventListener('ch
 document.querySelectorAll('.presets button').forEach(b => b.addEventListener('click', () => { const [d, t] = b.dataset.preset.split(' '); $('#tDate').value = d; $('#tTime').value = t; showDay(); }));
 $('#btnPresent').addEventListener('click', () => {
   const no = $('#tCard').value, date = $('#tDate').value, time = ($('#tTime').value || '').slice(0, 5);
-  if (AC.weekday(date) < 0 || isNaN(AC.toMin(time))) { say('Pick a date and a time on the test bench first.', 'Test bench', 'var(--ctrl)'); return; }
+  if (AC.weekday(date) < 0 || isNaN(AC.toMin(time))) { say('The test bench needs a date and a time. Type them, or press a quick time button such as Mon 09:00.', 'Test bench', 'var(--ctrl)'); return; }
   startSeq(cardSeq(no, date, time));
 });
 $('#btnExit').addEventListener('click', () => startSeq(exitSeq()));
@@ -2184,7 +2370,7 @@ $('#btnResetLab').addEventListener('click', () => {
   ST = AC.fresh(); UI = freshUI(); Object.assign(HW, {phys: false, relayLeft: 0, walk: null, hold: false, openFor: 0, alarm: false, pOpen: false, exitHeld: false});
   $('#btnHold').setAttribute('aria-pressed', 'false'); $('#btnHold').classList.remove('on'); $('#btnHold').textContent = 'Hold door open';
   CTRLWORD = 'READY'; CTRLCOLOR = ''; READERWORD = 'READY'; G.clearPackets(); G.clear(); G.led(IDLE); $('#lastRes').textContent = 'No test yet.';
-  setPhase(null); say('The lab is empty again: no devices, people, cards, or permissions. Start with tab 1.', 'Ready', 'var(--silk-dim)');
+  setPhase(null); say('The lab is empty again: no devices, people, cards, or permissions. Start again with tab 1, Controller.', 'Ready', 'var(--silk-dim)');
   after(); render();
 });
 $('#btnStep').addEventListener('click', () => { stop(); stepFwd(true); });
