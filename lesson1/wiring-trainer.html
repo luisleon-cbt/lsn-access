@@ -831,6 +831,138 @@ function Lab3D(stage, opts) {
   (window.__labs = window.__labs || []).push(labApi);   // lets tests reach the camera
   return labApi;
 }
+// Guide UI: a "Do this now" bar pinned on the board and an Instructions window (a modal on laptops, a bottom sheet on phones)
+// with the page's numbered steps. It reads section.guide (ol#howSteps, #nowText), so guide(stepNo, html) keeps both in sync.
+// Works in the 2D fallback too. The full guide stays below the board. Turn it off with <body data-guide-ui="off">.
+(function guideUI() {
+  function init() {
+    const steps = document.getElementById('howSteps');
+    const sec = steps && steps.closest('.guide');
+    const stage = sec && (document.querySelector('.app > .stage') || document.querySelector('.stage.wide') || document.querySelector('.stage'));
+    if (!stage || document.body.dataset.guideUi === 'off' || document.querySelector('.gi-dlg')) return;
+    const nowEl = document.getElementById('nowText');
+    const KEY = 'guideSeen:' + location.pathname;   // remembered once the window is closed
+    const es = () => /^es/i.test(document.documentElement.lang || '');
+    const L = k => ({open: es() ? 'Instrucciones' : 'Instructions', now: es() ? 'Haz esto ahora' : 'Do this now', step: es() ? 'Paso' : 'Step', of: es() ? 'de' : 'of',
+      all: es() ? 'Ver pasos' : 'All steps', go: es() ? 'Ir al tablero' : 'Go to the board', below: es() ? 'Ver la guía debajo del tablero' : 'Show the guide below the board',
+      close: es() ? 'Cerrar instrucciones' : 'Close instructions', hide: es() ? 'Ocultar o mostrar el siguiente paso' : 'Hide or show the next step'})[k];
+    const css = document.createElement('style'); css.id = 'gi-css';
+    css.textContent =
+      '.gi-open{position:absolute;z-index:5;top:14px;right:16px;display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 7px;border-radius:6px;border:1px solid var(--gi-accent,var(--cbt-gold,#E0B840));background:rgba(11,15,43,.88);color:var(--silk,#eef1fa);font:600 12px var(--font-mono,monospace);letter-spacing:.05em;cursor:pointer;backdrop-filter:blur(6px)}' +
+      '.gi-open .q{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--gi-accent,var(--cbt-gold,#E0B840));color:var(--gi-on-accent,var(--cbt-navy,#283068));font-weight:800}' +
+      '.gi-open:hover{background:rgba(23,31,79,.95)}.gi-open:focus-visible,.gi-bar button:focus-visible,.gi-dlg button:focus-visible{outline:2px solid var(--gi-accent,var(--cbt-gold,#E0B840));outline-offset:2px}' +
+      '.stage.has-gi .hud-top{right:160px}' +
+      '.gi-bar{pointer-events:auto;flex-basis:100%;display:flex;align-items:center;gap:10px;max-width:820px;padding:7px 8px 7px 12px;border-radius:6px;border:1px solid var(--line-2,#3a4690);border-left:4px solid var(--gi-now,var(--cbt-sky,#38B0E0));background:rgba(11,15,43,.9);backdrop-filter:blur(6px);color:var(--silk,#eef1fa);font:400 13.5px/1.4 var(--font-body,sans-serif)}' +
+      '.gi-bar.gi-abs{position:absolute;z-index:4;left:12px;right:12px;bottom:12px}' +
+      '.gi-bar .gi-k{flex:none;border:0;background:transparent;padding:2px 2px;cursor:pointer;font:600 10.5px var(--font-mono,monospace);letter-spacing:.12em;text-transform:uppercase;color:var(--gi-now,var(--cbt-sky,#38B0E0));white-space:nowrap}' +
+      '.gi-bar .gi-k::after{content:" \\25BE";letter-spacing:0}.gi-bar.min .gi-k::after{content:" \\25B8"}' +
+      '.gi-bar .gi-t{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}' +
+      '.gi-bar .gi-t b{color:var(--gi-accent,var(--cbt-gold,#E0B840));font-weight:600}' +
+      '.gi-bar .gi-all{flex:none;border:1px solid var(--line-2,#3a4690);background:var(--panel-2,#171f4f);color:var(--silk,#eef1fa);border-radius:4px;padding:5px 10px;font:600 11px var(--font-mono,monospace);letter-spacing:.04em;cursor:pointer;white-space:nowrap}' +
+      '.gi-bar .gi-all:hover{border-color:var(--gi-accent,var(--cbt-gold,#E0B840))}' +
+      '.gi-bar.min{max-width:max-content}.gi-bar.min .gi-t,.gi-bar.min .gi-all{display:none}' +
+      '.gi-dlg{width:min(720px,calc(100vw - 32px));max-width:none;max-height:min(86vh,860px);padding:0;border:1px solid var(--line-2,#3a4690);border-radius:10px;background:var(--panel,#10163b);color:var(--silk,#eef1fa);box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden}' +
+      '.gi-dlg[open]{display:flex;flex-direction:column}.gi-dlg::backdrop{background:rgba(5,8,24,.62)}' +
+      '.gi-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 14px 12px 18px;border-bottom:1px solid var(--line,#2a3470)}' +
+      '.gi-head h2{margin:0;font-size:19px;line-height:1.25}' +
+      '.gi-x{flex:none;width:36px;height:36px;border-radius:6px;border:1px solid var(--line,#2a3470);background:transparent;color:var(--silk,#eef1fa);font:400 22px/1 var(--font-body,sans-serif);cursor:pointer}.gi-x:hover{border-color:var(--gi-accent,var(--cbt-gold,#E0B840))}' +
+      '.gi-dlg .gi-body.guide{display:grid;grid-template-columns:1fr;gap:12px;max-width:none;margin:0;padding:16px 18px;overflow-y:auto;overscroll-behavior:contain}' +
+      '.gi-dlg .gi-body .now{padding:11px 14px;font-size:15px}.gi-dlg .gi-body .tips{margin:2px 0 0}' +
+      '.gi-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px;border-top:1px solid var(--line,#2a3470)}' +
+      '.gi-go{border:0;border-radius:6px;padding:10px 18px;background:var(--gi-accent,var(--cbt-gold,#E0B840));color:var(--gi-on-accent,var(--cbt-navy,#283068));font:700 14px var(--font-body,sans-serif);cursor:pointer}' +
+      '.gi-below{border:0;background:transparent;padding:6px 2px;color:var(--silk-dim,#aeb3c9);font:500 13px var(--font-body,sans-serif);text-decoration:underline;text-underline-offset:3px;cursor:pointer}.gi-below:hover{color:var(--silk,#eef1fa)}' +
+      '@media(max-width:600px){.gi-open{display:none}.stage.has-gi .hud-top{right:16px}' +
+      '.gi-bar{flex-wrap:wrap;gap:4px 8px;padding:6px 6px 8px 10px;font-size:13px}.gi-bar .gi-k{flex:1 1 auto;text-align:left;font-size:9.5px;letter-spacing:.08em}.gi-bar .gi-t{order:3;flex-basis:100%}.gi-bar.min{padding-bottom:6px}' +
+      '.gi-dlg{width:100%;margin:auto 0 0;max-height:88vh;border-radius:14px 14px 0 0;border-bottom:0}' +
+      '.gi-dlg[open]{animation:gi-up .22s ease-out}.gi-head{padding-top:18px;position:relative}' +
+      '.gi-head::before{content:"";position:absolute;top:7px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:2px;background:var(--line-2,#3a4690)}' +
+      '.gi-foot{flex-direction:column-reverse;align-items:stretch}.gi-go{width:100%}}' +
+      '@keyframes gi-up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}' +
+      '@media(prefers-reduced-motion:reduce){.gi-dlg[open]{animation:none}}';
+    document.head.appendChild(css);
+
+    // the button at the top right of the board
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'gi-open'; btn.setAttribute('aria-haspopup', 'dialog');
+    stage.appendChild(btn); stage.classList.add('has-gi');
+    // the "Do this now" bar near the bottom of the board
+    const bar = document.createElement('div'); bar.className = 'gi-bar';
+    bar.innerHTML = '<button type="button" class="gi-k" aria-expanded="true"></button><span class="gi-t"></span><button type="button" class="gi-all" aria-haspopup="dialog"></button>';
+    const hb = stage.querySelector('.hud-bottom');
+    if (hb) hb.insertBefore(bar, hb.firstChild); else { bar.classList.add('gi-abs'); stage.appendChild(bar); }
+    const kBtn = bar.querySelector('.gi-k'), tEl = bar.querySelector('.gi-t'), allBtn = bar.querySelector('.gi-all');
+    // the window
+    const dlg = document.createElement('dialog'); dlg.className = 'gi-dlg'; dlg.setAttribute('aria-labelledby', 'giTitle');
+    dlg.innerHTML = '<div class="gi-head"><h2 id="giTitle"></h2><button type="button" class="gi-x">&times;</button></div>' +
+      '<div class="gi-body guide"></div><div class="gi-foot"><button type="button" class="gi-below"></button><button type="button" class="gi-go"></button></div>';
+    document.body.appendChild(dlg);
+    const body = dlg.querySelector('.gi-body');
+    const strip = n => { n.removeAttribute('id'); n.removeAttribute('aria-live'); n.querySelectorAll('[id]').forEach(x => x.removeAttribute('id')); return n; };
+
+    function info() {
+      const lis = [...steps.querySelectorAll(':scope > li')];
+      return {n: lis.findIndex(li => li.classList.contains('current')) + 1, total: lis.length, cur: lis.find(li => li.classList.contains('current'))};
+    }
+    function fill() {
+      body.innerHTML = '';
+      const now = sec.querySelector('.now');
+      if (now) body.appendChild(strip(now.cloneNode(true)));
+      body.appendChild(strip(steps.cloneNode(true)));
+      const tips = sec.querySelector('.tips');
+      if (tips) body.appendChild(strip(tips.cloneNode(true)));
+    }
+    function sync() {
+      const s = info(), h = sec.querySelector('h2');
+      kBtn.textContent = (s.n ? L('step') + ' ' + s.n + ' ' + L('of') + ' ' + s.total + ' · ' : '') + L('now');
+      tEl.innerHTML = nowEl ? nowEl.innerHTML : (s.cur ? s.cur.innerHTML : '');
+      btn.innerHTML = '<span class="q" aria-hidden="true">?</span>' + L('open');
+      allBtn.textContent = L('all'); kBtn.title = L('hide');
+      dlg.querySelector('#giTitle').textContent = h ? h.textContent.trim() : L('open');
+      dlg.querySelector('.gi-x').setAttribute('aria-label', L('close'));
+      dlg.querySelector('.gi-go').textContent = L('go'); dlg.querySelector('.gi-below').textContent = L('below');
+      if (dlg.open) fill();
+    }
+    let lastFocus = null;
+    function open() {
+      if (dlg.open) return;
+      lastFocus = document.activeElement; fill();
+      try { dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); }
+      const cur = body.querySelector('li.current');
+      if (cur && cur.scrollIntoView) cur.scrollIntoView({block: 'nearest'});
+      dlg.querySelector('.gi-go').focus();
+    }
+    function close() { if (dlg.open) dlg.close(); }
+    dlg.addEventListener('close', () => {
+      try { localStorage.setItem(KEY, '1'); } catch (e) {}
+      const f = lastFocus && lastFocus !== document.body && document.contains(lastFocus) ? lastFocus : null;
+      if (f && f.focus) f.focus({preventScroll: true});
+    });
+    dlg.addEventListener('click', e => { if (e.target === dlg) close(); });        // a click on the dimmed area outside closes it
+    dlg.addEventListener('keydown', e => e.stopPropagation());                      // keys typed here never drive the board
+    dlg.querySelector('.gi-x').addEventListener('click', close);
+    dlg.querySelector('.gi-go').addEventListener('click', close);
+    dlg.querySelector('.gi-below').addEventListener('click', () => {
+      lastFocus = null; close();
+      const h = sec.querySelector('h2'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({preventScroll: true}); }
+      sec.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start'});
+    });
+    btn.addEventListener('click', open); allBtn.addEventListener('click', open);
+    kBtn.addEventListener('click', () => { const m = bar.classList.toggle('min'); kBtn.setAttribute('aria-expanded', String(!m)); });
+
+    let q = 0; const later = () => { if (!q) q = requestAnimationFrame(() => { q = 0; sync(); }); };
+    const mo = new MutationObserver(later);
+    mo.observe(steps, {attributes: true, attributeFilter: ['class'], subtree: true, childList: true});
+    if (nowEl) mo.observe(nowEl, {childList: true, subtree: true, characterData: true});
+    mo.observe(document.documentElement, {attributes: true, attributeFilter: ['lang']});
+    sync();
+
+    // open once on the first visit to this page
+    let seen = false;
+    try { seen = localStorage.getItem(KEY) === '1'; } catch (e) {}
+    if (!seen) setTimeout(() => { if (!document.querySelector('dialog[open]')) open(); }, 900);
+    window.__guideUI = {open, close, dialog: dlg, bar};
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
 // LAB3D END
 
 // MODEL START: the circuit as data and plain functions (no DOM). Tested with node.
